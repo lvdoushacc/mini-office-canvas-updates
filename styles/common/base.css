@@ -1,0 +1,329 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-app);
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  user-select: none;
+  text-rendering: optimizeLegibility;
+}
+
+/* 消除动态数值左右抖动（等宽数字） */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* 极简自定义滚动条 */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html.desktop-shell,
+html.desktop-shell body {
+  background: var(--bg-app);
+}
+
+html.desktop-shell #app {
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--bg-app);
+}
+
+html.desktop-shell.window-maximized #app {
+  border-radius: 0;
+}
+
+/* ==========================================================================
+   Electron 无边框窗口控制栏 (全局置顶、跨视图、高对比、防冲突规范)
+   ========================================================================== */
+.desktop-window-chrome {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 34px;
+  z-index: 1000000; /* 最高层级：确保在所有视图、抽屉与模态弹窗之上均稳定可见可控 */
+  display: block;
+  pointer-events: none;
+}
+
+/* 非桌面端模式下隐藏最小化、最大化与关闭按钮，仅保留胶囊内的全局深浅切换按钮 */
+html:not(.desktop-shell) .desktop-window-btn[data-window-action] {
+  display: none !important;
+}
+
+/* 顶部整条拖拽区域（避开右上角四键控制按钮区） */
+.desktop-window-drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 155px;
+  height: 34px;
+  -webkit-app-region: drag;
+  pointer-events: auto;
+}
+
+/* 画布工作区激活态：将拖拽区域左起点偏移至 470px 以外，彻底避开 458px 的左侧抽屉（个人资产、生成日志、工作流）及工具栏，确保抽屉右上角按钮 100% 可悬停点击 */
+#app:has(#workspaceView.active) .desktop-window-drag-region,
+.workspace-active .desktop-window-drag-region {
+  left: min(470px, calc(100vw - 200px)) !important;
+}
+
+/* 右上角按钮胶囊区 */
+.desktop-window-controls {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 2px;
+  border-radius: 6px;
+  background: var(--surface-card, rgba(255, 255, 255, 0.75));
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: auto !important;
+  -webkit-app-region: no-drag !important;
+  z-index: 1000002;
+}
+
+[data-theme="dark"] .desktop-window-controls {
+  background: rgba(18, 20, 26, 0.82);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.desktop-window-btn {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-secondary, #64748b);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto !important;
+  -webkit-app-region: no-drag !important;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color var(--duration-fast, 140ms), background-color var(--duration-fast, 140ms), border-color var(--duration-fast, 140ms);
+}
+
+.desktop-window-btn svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none !important;
+}
+
+.desktop-window-btn-theme svg {
+  width: 13px;
+  height: 13px;
+  pointer-events: none !important;
+}
+
+.desktop-window-btn-theme .global-theme-icon-sun {
+  display: none;
+}
+
+.desktop-window-btn-theme .global-theme-icon-moon {
+  display: block;
+}
+
+[data-theme="dark"] .desktop-window-btn-theme .global-theme-icon-sun,
+.theme-dark .desktop-window-btn-theme .global-theme-icon-sun,
+html.dark .desktop-window-btn-theme .global-theme-icon-sun,
+.desktop-window-btn-theme[data-theme="dark"] .global-theme-icon-sun {
+  display: block !important;
+}
+
+[data-theme="dark"] .desktop-window-btn-theme .global-theme-icon-moon,
+.theme-dark .desktop-window-btn-theme .global-theme-icon-moon,
+html.dark .desktop-window-btn-theme .global-theme-icon-moon,
+.desktop-window-btn-theme[data-theme="dark"] .global-theme-icon-moon {
+  display: none !important;
+}
+
+[data-theme="light"] .desktop-window-btn-theme .global-theme-icon-sun,
+.desktop-window-btn-theme[data-theme="light"] .global-theme-icon-sun {
+  display: none !important;
+}
+
+[data-theme="light"] .desktop-window-btn-theme .global-theme-icon-moon,
+.desktop-window-btn-theme[data-theme="light"] .global-theme-icon-moon {
+  display: block !important;
+}
+
+.desktop-window-btn .window-icon-restore {
+  display: none;
+}
+
+html.window-maximized .desktop-window-btn .window-icon-maximize {
+  display: none !important;
+}
+
+html.window-maximized .desktop-window-btn .window-icon-restore {
+  display: block !important;
+}
+
+.desktop-window-btn:hover {
+  color: var(--text-primary, #0f172a);
+  background: var(--hover-bg, rgba(15, 23, 42, 0.08));
+}
+
+.desktop-window-btn-close:hover {
+  color: #ffffff !important;
+  background: #e81123 !important;
+  border-color: #e81123 !important;
+}
+
+[data-theme="dark"] .desktop-window-btn {
+  color: var(--text-secondary, #94a3b8);
+}
+
+[data-theme="dark"] .desktop-window-btn:hover {
+  color: var(--text-primary, #f8fafc);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .desktop-window-btn-close:hover {
+  color: #ffffff !important;
+  background: #e81123 !important;
+  border-color: #e81123 !important;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 按钮通用重置 */
+button {
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 输入框通用重置 */
+input {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text-1);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color var(--duration-fast);
+}
+
+input:focus {
+  border-color: var(--border-focus);
+}
+
+input::placeholder {
+  color: var(--text-3);
+}
+
+/* 统一视图容器 */
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: transparent;
+}
+
+.view-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 160ms ease, visibility 160ms ease;
+  z-index: 1;
+}
+
+.view-container.active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 10;
+}
+
+/* 矢量图标统一设置 (V3 规范) */
+.icon {
+  width: var(--shop-icon-md, 16px);
+  height: var(--shop-icon-md, 16px);
+  display: inline-block;
+  vertical-align: middle;
+  stroke-width: var(--shop-icon-stroke, 1.5px);
+  stroke: currentColor;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+
+/* Agent2: global input contrast via theme tokens */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select {
+  color: var(--input-fg, var(--text-primary));
+  background-color: var(--input-bg, transparent);
+  border-color: var(--input-border, var(--border));
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder, var(--text-muted));
+  opacity: 1;
+}
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}

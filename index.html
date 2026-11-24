@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小小办公</title>
+  <script>
+    (function() {
+      const isDesktop = Boolean(
+        (window.desktopWindow && window.desktopWindow.isDesktop) ||
+        window.desktopWindow ||
+        (window.navigator && window.navigator.userAgent && window.navigator.userAgent.indexOf('Electron') !== -1) ||
+        new URLSearchParams(location.search).get('desktop') === '1' ||
+        sessionStorage.getItem('xxdp_is_desktop') === '1' ||
+        localStorage.getItem('xxdp_is_desktop') === '1'
+      );
+      if (isDesktop) {
+        document.documentElement.classList.add('desktop-shell');
+        try { sessionStorage.setItem('xxdp_is_desktop', '1'); } catch (_) {}
+        try { localStorage.setItem('xxdp_is_desktop', '1'); } catch (_) {}
+      }
+
+      // 提前初始化主题（避免白屏闪烁与深浅跳动）
+      try {
+        var savedTheme = localStorage.getItem('xxdp_theme') || localStorage.getItem('studio_theme') || localStorage.getItem('canvas_theme') || 'dark';
+        var isDark = (savedTheme === 'dark');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.documentElement.classList.toggle('theme-dark', isDark);
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.classList.toggle('studio-theme-dark', isDark);
+      } catch (_) {}
+
+      // 全局统一深浅模式切换入口（单一分发入口，杜绝双重监听事件相消）
+      window.toggleGlobalAppTheme = function(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (window.app && typeof window.app.toggleThemeWithAnimation === 'function') {
+          window.app.toggleThemeWithAnimation();
+          return;
+        }
+        if (window.app && typeof window.app.toggleTheme === 'function') {
+          window.app.toggleTheme();
+          return;
+        }
+        var d = document.documentElement;
+        var curr = d.getAttribute('data-theme') || (d.classList.contains('theme-dark') ? 'dark' : 'light');
+        var next = (curr === 'dark') ? 'light' : 'dark';
+        var nextDark = (next === 'dark');
+        d.setAttribute('data-theme', next);
+        d.classList.toggle('theme-dark', nextDark);
+        d.classList.toggle('dark', nextDark);
+        d.classList.toggle('studio-theme-dark', nextDark);
+        var btn = document.getElementById('globalThemeToggleBtn');
+        if (btn) {
+          btn.setAttribute('data-theme', next);
+          btn.title = nextDark ? '切换为浅色模式' : '切换为深色模式';
+          btn.setAttribute('aria-label', nextDark ? '切换为浅色模式' : '切换为深色模式');
+        }
+        try {
+          localStorage.setItem('xxdp_theme', next);
+          localStorage.setItem('studio_theme', next);
+          localStorage.setItem('canvas_theme', next);
+        } catch (_) {}
+        try {
+          var frame = document.getElementById('xxdpCanvasFrame');
+          if (frame && frame.contentWindow) {
+            frame.contentWindow.postMessage({ type: 'theme_changed', theme: next }, '*');
+            frame.contentWindow.postMessage({ type: 'studio-theme', theme: next }, '*');
+            var doc = frame.contentDocument;
+            if (doc && doc.documentElement) {
+              doc.documentElement.setAttribute('data-theme', next);
+              doc.documentElement.classList.toggle('theme-dark', nextDark);
+              doc.documentElement.classList.toggle('studio-theme-dark', nextDark);
+              if (doc.body) {
+                doc.body.setAttribute('data-theme', next);
+                doc.body.classList.toggle('theme-dark', nextDark);
+                doc.body.classList.toggle('studio-theme-dark', nextDark);
+              }
+            }
+          }
+        } catch (_) {}
+      };
+    })();
+  </script>
+  <link rel="icon" href="/static/images/logo.png?v=2026.09.17.logo_3d_v1" type="image/png">
+  <!-- Codex 极简专业桌面规范 -->
+  <!-- 静态资源版本号统一为一次发布标识，避免浏览器/iframe 复用旧样式 -->
+  <link rel="stylesheet" href="styles/common/variables.css?v=2026.09.17.winfix1">
+  <link rel="stylesheet" href="styles/common/base.css?v=2026.09.17.theme_single_event_v1">
+  <link rel="stylesheet" href="styles/common/welcome.css?v=2026.09.17.theme_single_event_v1">
+  <link rel="stylesheet" href="styles/home/home.css?v=2026.09.17.theme_single_event_v1">
+  <link rel="stylesheet" href="styles/home/home-assets.css?v=2026.09.17.wf_export_fix_v1">
+  <link rel="stylesheet" href="styles/common/workspace.css?v=2026.09.18.pointer_events_fix_v4">
+  <link rel="stylesheet" href="styles/common/canvas.css?v=2026.09.13.r1">
+</head>
+<body>
+  <div id="app">
+    <div class="desktop-window-chrome" aria-label="窗口控制栏">
+      <div class="desktop-window-drag-region" aria-hidden="true"></div>
+      <div class="desktop-window-controls">
+        <button type="button" class="desktop-window-btn desktop-window-btn-theme" id="globalThemeToggleBtn" title="切换外观主题" aria-label="切换外观主题" onclick="window.toggleGlobalAppTheme(event)">
+          <svg class="global-theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/>
+            <path d="M12 20v2"/>
+            <path d="m4.93 4.93 1.41 1.41"/>
+            <path d="m17.66 17.66 1.41 1.41"/>
+            <path d="M2 12h2"/>
+            <path d="M20 12h2"/>
+            <path d="m6.34 17.66-1.41 1.41"/>
+            <path d="m19.07 4.93-1.41 1.41"/>
+          </svg>
+          <svg class="global-theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+        </button>
+        <button type="button" class="desktop-window-btn" data-window-action="minimize" title="最小化" aria-label="最小化">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
+        </button>
+        <button type="button" class="desktop-window-btn" data-window-action="maximize" title="最大化" aria-label="最大化">
+          <svg class="window-icon-maximize" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"></rect></svg>
+          <svg class="window-icon-restore" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h10a2 2 0 0 1 2 2v10M4 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"></path></svg>
+        </button>
+        <button type="button" class="desktop-window-btn desktop-window-btn-close" data-window-action="close" title="关闭" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </div>
+    </div>
+    <!-- ================= 视图 1：首次启动页（极简桌面卡片，黑白灰中性层级) ================= -->
+    <section id="welcomeView" class="view-container">
+      <div class="welcome-screen">
+        <!-- 方案 1：双栏工作台桌面级卡片 (Studio Split) -->
+        <div class="welcome-card welcome-card-split">
+          <!-- 左栏：品牌特性与本地优先 (极简黑白灰单色) -->
+          <aside class="welcome-aside">
+            <div class="welcome-aside-main">
+              <div class="welcome-brand-badge">
+                <img class="welcome-brand-logo-img welcome-brand-light" src="/static/images/brand_horizontal.png?v=2026.09.17.welcome_center_v1" alt="小小办公" />
+                <img class="welcome-brand-logo-img welcome-brand-dark" src="/static/images/brand_horizontal_dark.png?v=2026.09.17.welcome_center_v1" alt="小小办公" />
+              </div>
+              <div class="welcome-brand-info">
+                <p class="welcome-subtitle">本地优先 · AI 无限画布协作终端</p>
+              </div>
+              <div class="welcome-features-list">
+                <div class="welcome-feature-item">
+                  <span class="welcome-feature-dot"></span>
+                  <span>100% 本地数据存储与轻量运行时</span>
+                </div>
+                <div class="welcome-feature-item">
+                  <span class="welcome-feature-dot"></span>
+                  <span>局域网毫秒级低延迟 CRDT 协同</span>
+                </div>
+                <div class="welcome-feature-item">
+                  <span class="welcome-feature-dot"></span>
+                  <span>多模型图像、视频与流式提示词</span>
+                </div>
+              </div>
+            </div>
+            <div class="welcome-aside-footer">
+              <svg class="welcome-footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>配置与数据安全保存在本机环境</span>
+            </div>
+          </aside>
+
+          <!-- 右栏：初始化工作台配置表单 -->
+          <main class="welcome-main">
+            <header class="welcome-main-header">
+              <div class="welcome-title-row">
+                <h2 class="welcome-main-title">设置工作台</h2>
+                <span class="welcome-badge">初始化</span>
+              </div>
+              <p class="welcome-main-subtitle">设置主机名称后即可进入创作空间</p>
+            </header>
+
+            <form id="welcomeForm" class="welcome-form">
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label class="form-label" for="workspaceInput">主机名字</label>
+                  <span class="form-label-tip">局域网可见标识</span>
+                </div>
+                <div class="welcome-input-wrap">
+                  <svg class="welcome-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                  <input 
+                    type="text" 
+                    id="workspaceInput" 
+                    class="welcome-input" 
+                    placeholder="例如：我的主机"
+                    required 
+                    maxlength="32"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button type="button" id="welcomeInputClearBtn" class="welcome-input-clear-btn" title="清空" aria-label="清空">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="welcome-preset-chips" id="welcomePresetChips">
+                  <span class="welcome-chip-label">常用预设：</span>
+                  <button type="button" class="welcome-chip" data-preset="我的主机">我的主机</button>
+                  <button type="button" class="welcome-chip" data-preset="工作站">工作站</button>
+                  <button type="button" class="welcome-chip" data-preset="创意工坊">创意工坊</button>
+                </div>
+              </div>
+
+              <button type="submit" id="startBtn" class="welcome-submit-btn">
+                <span>进入程序</span>
+                <span class="welcome-btn-arrow" aria-hidden="true">↵</span>
+              </button>
+            </form>
+
+            <footer class="welcome-footer">
+              <div class="welcome-footer-hint-row">
+                <svg class="welcome-footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="2" width="20" height="8" rx="2"></rect>
+                  <rect x="2" y="14" width="20" height="8" rx="2"></rect>
+                  <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                  <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                </svg>
+                <p class="welcome-footer-hint">名字将保存在本机配置中，下次启动直接进入。</p>
+              </div>
+            </footer>
+          </main>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 视图 2：首页（全新桌面编辑器级面板架构 V1) ================= -->
+    <section id="homeView" class="view-container">
+      <div class="home-stage-container">
+        <div class="home-app-card">
+          <!-- 左侧栏（170px 窄边栏，克制分组与底部） -->
+          <aside class="home-sidebar">
+            <div class="sidebar-brand-wrap">
+              <div class="sidebar-brand">
+                <img class="brand-logo-img brand-logo-light" src="/static/images/brand_horizontal.png?v=2026.09.17.welcome_center_v1" alt="小小办公" />
+                <img class="brand-logo-img brand-logo-dark" src="/static/images/brand_horizontal_dark.png?v=2026.09.17.welcome_center_v1" alt="小小办公" />
+                <div class="user-status-row brand-status-row" id="homeTopStatusIndicator" style="display: none !important;" hidden>
+                  <span class="status-dot"></span>
+                  <span id="homeTopStatusText" class="user-status-text">本地</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sidebar-nav-section">
+        <div class="sidebar-section-title">工作台</div>
+              <nav id="sidebarNav" class="sidebar-nav-group">
+                <div class="sidebar-nav-item active" data-nav="my">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                  <span>我的画布</span>
+                </div>
+                <div class="sidebar-nav-item" data-nav="assets">
+                  <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                  <span>我的资产</span>
+                </div>
+                <div class="sidebar-nav-item" data-nav="favorites">
+                  <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <span>收藏</span>
+                </div>
+                <div class="sidebar-nav-item" data-nav="trash">
+                  <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <span>回收站</span>
+                </div>
+                <div class="sidebar-nav-item" data-nav="lan">
+                  <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                  <span>协作画布</span>
+                </div>
+              </nav>
+            </div>
+
+            <div class="sidebar-footer">
+              <!-- 底部操作区：系统设置 -->
+              <div class="sidebar-settings-row">
+                <button type="button" id="navSettings" class="sidebar-settings-btn" title="系统设置" aria-label="系统设置">
+                  <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                  <span>设置</span>
+                </button>
+              </div>
+
+              <div class="sidebar-user-pill">
+                <div class="user-avatar" id="currentUserAvatar">👤</div>
+                <div class="user-info">
+                  <span id="workspaceDisplay" class="user-name">当前工作区</span>
+                </div>
+                <button id="btnLogout" class="sidebar-logout-btn" type="button" title="退出登录">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          <!-- 右侧主内容大卡片容器 (独立抬升面板，6px 圆角) -->
+          <main class="home-main-panel" id="canvasLaunchpad">
+            <!-- 顶部行：大标题 + 排序与搜索操作区 -->
+            <header class="home-panel-header">
+              <div class="home-title-group">
+                <h1 id="homeSectionTitle" class="home-section-title">我的画布</h1>
+              </div>
+              <div class="home-header-actions">
+                <!-- Codex 简约搜索 -->
+                <div class="home-search-wrapper" id="homeSearchWrapper">
+                  <label class="home-search-box" id="homeSearchBox">
+                    <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <circle cx="11" cy="11" r="8"/>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" class="command-input" id="homeProjectSearchInput" placeholder="搜索项目..." spellcheck="false" autocomplete="off" aria-label="搜索项目" />
+                  </label>
+                </div>
+              </div>
+            </header>
+
+
+            <!-- 项目网格展示区域 （可滚动） -->
+            <div class="home-portals-scroll-area" id="homePortalsScrollArea">
+              <div id="dynamicPortalsContainer" class="home-portals-grid"></div>
+            </div>
+
+            <section id="homeAssetsScrollArea" class="asset-library" aria-label="素材管理库" style="display: none;"></section>
+
+            <!-- 全新协作画布中心 (P2P Mesh + CRDT 现代化双翼协同架构) -->
+            <div class="home-lan-scroll-area lan-hub-area" id="homeLanScrollArea" style="display: none;">
+              <!-- 容器 1：协同工作台大厅 (全新双翼设计) -->
+              <div class="lan-hub-container" id="lanLobbyContainer" data-host-only="true">
+                
+                <!-- 1. 顶部网络驾驶舱状态条 (LAN Status Ribbon) -->
+                <div class="lan-status-ribbon" id="lanStatusRibbon">
+                  <div class="lan-ribbon-left">
+                    <div class="lan-service-status-pill">
+                      <span class="lan-pulse-dot"></span>
+                      <span class="lan-status-text">局域网协同就绪</span>
+                    </div>
+                    <span class="lan-ribbon-divider"></span>
+                    <div class="lan-ip-chip" id="lanHostIpChip" title="点击复制完整协作地址">
+                      <span class="ip-label">本机 IP:</span>
+                      <span class="ip-value" id="lanRibbonHostAddress">正在探测...</span>
+                      <button type="button" class="lan-copy-btn" id="btnLanCopyIp" title="复制本机地址">
+                        <svg class="icon" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        <span id="txtLanCopyIpFeedback">复制</span>
+                      </button>
+                    </div>
+                    <div class="lan-seat-chip" id="lanRibbonSeatChip">
+                      <span class="seat-dot"></span>
+                      <span class="seat-label" id="lanRibbonSeatName">房主席位</span>
+                    </div>
+                  </div>
+                  <div class="lan-ribbon-right">
+                    <button type="button" id="btnLanPairingCodeShortcut" class="lan-ribbon-btn" title="查看或输入协作配对码">
+                      <svg class="icon" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18M3 9h18"/></svg>
+                      <span>配对码直连</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. 中部核心双翼工作台 (Dual-Wing Workbench) -->
+                <div class="lan-dual-workbench">
+
+                  <!-- 左翼：发起协同共享 (Host & Share) -->
+                  <div class="lan-wing-panel lan-host-wing">
+                    <div class="lan-wing-header">
+                      <div class="lan-wing-title-group">
+                        <div class="lan-wing-icon-box host-icon-box">
+                          <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                        </div>
+                        <div>
+                          <h3 class="lan-wing-title">发起协同共享</h3>
+                          <span class="lan-wing-subtitle">主持画板并向局域网广播</span>
+                        </div>
+                      </div>
+                      <span class="lan-wing-status-badge host-badge">Host 模式</span>
+                    </div>
+
+                    <!-- 未共享时：现代化创建房间表单 -->
+                    <div id="lanHostCreateFormWrap" class="lan-wing-body">
+                      <div class="lan-wing-fields">
+                        <div class="lan-field-group">
+                          <label for="lanHostProjectSelect" class="lan-field-label">
+                            <span>选择共享项目</span>
+                            <span class="field-required">*</span>
+                          </label>
+                          <select id="lanHostProjectSelect" class="lan-modern-select">
+                            <option value="">正在加载项目列表...</option>
+                          </select>
+                        </div>
+                        <!-- 隐藏的画布选择容器，保留 DOM 以向前兼容画布 ID 绑定 -->
+                        <select id="lanHostCanvasSelect" style="display: none !important;" hidden></select>
+
+                        <div class="lan-field-group">
+                          <label for="lanHostNameInput" class="lan-field-label">房间名称</label>
+                          <input id="lanHostNameInput" type="text" class="lan-modern-input" placeholder="例如：我的协同空间" maxlength="30" />
+                        </div>
+
+                        <div class="lan-field-group">
+                          <label class="lan-field-label">访问权限 (PIN 码)</label>
+                          <div class="lan-pin-mode-selector">
+                            <label class="lan-pin-mode-option">
+                              <input type="radio" name="lanPinMode" id="lanPinModeNone" value="none" checked />
+                              <span class="lan-pin-mode-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                                <span>不用 PIN 码 (自由加入)</span>
+                              </span>
+                            </label>
+                            <label class="lan-pin-mode-option">
+                              <input type="radio" name="lanPinMode" id="lanPinModeCustom" value="custom" />
+                              <span class="lan-pin-mode-pill">
+                                <svg class="icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                <span>设置 PIN 码</span>
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+
+                        <div class="lan-field-group" id="lanPinInputGroup" style="display: none;">
+                          <label for="lanHostPasscodeInput" class="lan-field-label">
+                            <span>4位入房 PIN 码</span>
+                            <span class="lan-label-tip">协作者需输入此码才能加入</span>
+                          </label>
+                          <div class="lan-pin-input-wrap">
+                            <input id="lanHostPasscodeInput" type="text" class="lan-modern-input pin-input" placeholder="4位PIN" maxlength="8" />
+                            <button type="button" id="btnLanRegenPin" class="lan-small-btn secondary" title="随机更换">
+                              <svg class="icon" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                              <span>换一个</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div id="lanHostCreateError" class="lan-form-error" style="display: none;"></div>
+
+                        <div class="lan-wing-actions">
+                          <button type="button" id="btnLanCreateRoom" class="lan-btn-primary-action">
+                            <svg class="icon play-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <span>开启协作画布</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 已共享时：现代化活跃协同房间状态卡片 -->
+                    <div id="lanHostActiveCard" class="lan-wing-body active-room-body" style="display: none;">
+                      <div class="lan-active-status-bar">
+                        <div class="active-pulse-wrap">
+                          <span class="lan-pulse-dot"></span>
+                          <span class="active-status-txt">协同共享中</span>
+                        </div>
+                        <span class="active-room-id" id="lanHostActiveRoomPort">Port: 8910</span>
+                      </div>
+
+                      <div class="lan-active-meta-grid">
+                        <div class="meta-item">
+                          <span class="meta-lbl">共享项目</span>
+                          <span class="meta-val" id="lanHostActiveProjName">-</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-lbl">主机地址</span>
+                          <span class="meta-val highlight" id="lanHostActiveAddress">-</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-lbl">访问权限</span>
+                          <span class="meta-val pin-val" id="lanHostActivePasscode">----</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-lbl">数据保存</span>
+                          <span class="meta-val highlight" id="lanHostSyncTargetHint" style="color:var(--success); font-size: 11.5px;">实时同步至我的画布</span>
+                        </div>
+                      </div>
+
+                      <!-- 在线成员 -->
+                      <div class="lan-presence-block">
+                        <div class="block-header">
+                          <span class="block-title">在线成员 (<span id="lanHostMemberCount">1</span>)</span>
+                          <span class="lan-sub-hint">CRDT 毫秒级防冲突</span>
+                        </div>
+                        <div class="presence-chips" id="lanHostMembersChips"></div>
+                      </div>
+
+                      <!-- 活跃控制操作 -->
+                      <div class="lan-active-actions-row">
+                        <button type="button" id="btnLanHostEnterCanvas" class="lan-btn-primary-action">
+                          <svg class="icon play-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                          <span>进入协同画布</span>
+                        </button>
+                        <button type="button" id="btnLanHostCloseRoom" class="lan-btn-danger-action">
+                          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                          <span>停止共享</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 右翼：加入协同网络 (Discover & Join Network) -->
+                  <div class="lan-wing-panel lan-join-wing">
+                    <div class="lan-wing-header">
+                      <div class="lan-wing-title-group">
+                        <div class="lan-wing-icon-box join-icon-box">
+                          <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </div>
+                        <div>
+                          <h3 class="lan-wing-title">加入协同网络</h3>
+                          <span class="lan-wing-subtitle">自动局域网探测或手动直连</span>
+                        </div>
+                      </div>
+                      <button type="button" id="btnLanRefreshRooms" class="lan-mini-refresh-btn" title="手动刷新协作房间">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        <span>刷新</span>
+                      </button>
+                    </div>
+
+                    <div class="lan-wing-body">
+                      <!-- 1. 自动发现的房间列表 -->
+                      <div class="lan-sub-block">
+                        <div class="sub-block-title-row">
+                          <span class="sub-block-title">可用协作房间</span>
+                          <span class="sub-block-hint" id="lanDiscoveredCountHint">已扫描当前子网</span>
+                        </div>
+                        <div id="lanDiscoveredRoomsList" class="lan-discovered-rooms-scroll">
+                          <div class="lan-empty-list">
+                            <div class="lan-radar-scan-box">
+                              <span class="lan-radar-ring"></span>
+                              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                            </div>
+                            <div class="lan-empty-title">正在实时扫描可用协作画板...</div>
+                            <div class="lan-empty-desc">同一局域网下的其他成员进入协作画布后将自动探测呈现</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- 2. 手动指定 IP 探测连接 -->
+                      <div class="lan-sub-block manual-probe-block">
+                        <div class="sub-block-title-row">
+                          <span class="sub-block-title">手动连接主机</span>
+                          <span class="sub-block-hint">支持跨网段直连</span>
+                        </div>
+                        <div class="manual-probe-row">
+                          <input id="lanManualIpInput" type="text" class="lan-modern-input flex-1" placeholder="输入主机 IP:端口，如 192.168.1.50:8910" />
+                          <button type="button" id="btnLanManualProbe" class="lan-small-btn secondary">
+                            <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <span>连接</span>
+                          </button>
+                        </div>
+                        <div id="lanManualError" class="lan-form-error" style="display: none;"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- 3. 底部活动与历史协同区 (消除空白，完整一体化) -->
+                <div class="lan-bottom-floor">
+                  <!-- 左侧：最近加入的协作历史 -->
+                  <div class="lan-bottom-card lan-recent-sessions-card">
+                    <div class="lan-bottom-card-header">
+                      <div class="lan-bottom-title-group">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span class="lan-bottom-card-title">最近加入的协作画板</span>
+                      </div>
+                      <span class="lan-bottom-card-hint">点击卡片可一键重连，免重复输 IP</span>
+                    </div>
+                    <div class="lan-recent-list" id="lanRecentSessionsList">
+                      <div class="lan-empty-recent">暂无最近协作记录，成功连入新房间后将自动记忆在此</div>
+                    </div>
+                  </div>
+
+                  <!-- 右侧：局域网 P2P 本地隐私与架构保障卡片 -->
+                  <div class="lan-bottom-card lan-security-card">
+                    <div class="lan-bottom-card-header">
+                      <div class="lan-bottom-title-group">
+                        <span class="security-shield-icon">🛡️</span>
+                        <span class="lan-bottom-card-title">纯本地局域网物理信道保障</span>
+                      </div>
+                    </div>
+                    <div class="lan-security-body">
+                      <p class="lan-security-desc">
+                        所有节点图元数据与实时光标仅在局域网物理链路流动，不经过任何外部云端服务器，保障企业设计隐私。
+                      </p>
+                      <div class="lan-security-badges">
+                        <span class="sec-badge">
+                          <span class="dot"></span> CRDT 向量时钟防冲突
+                        </span>
+                        <span class="sec-badge">
+                          <span class="dot"></span> 零外网带宽消耗
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- 容器 2：协作视口模式（只读快照与在线状态） -->
+              <div id="lanSessionContainer" class="lan-session-container" style="display:none;">
+                <div class="lan-session-bar">
+                  <div class="lan-session-bar-left">
+                    <span class="lan-role-badge" id="lanSessionRoleBadge">协同中</span>
+                    <div class="lan-session-meta">
+                      <span class="lan-session-project" id="lanSessionProjectTitle">项目名称</span>
+                      <span class="lan-session-host-info" id="lanSessionHostInfo">主机: -</span>
+                    </div>
+                  </div>
+
+                  <div class="lan-session-bar-right">
+                    <div class="lan-session-presence-pill" id="lanSessionPresenceBtn" title="查看在线成员">
+                      <span class="presence-dot"></span>
+                      <span id="lanSessionPresenceText">在线成员 1 人</span>
+                    </div>
+                    <button type="button" id="btnLanSessionEnterCanvas" class="lan-btn primary small">
+                      <span>进入协作画布</span>
+                    </button>
+                    <button type="button" id="btnLanSessionAction" class="lan-btn secondary">
+                      <span>返回大厅</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div id="lanSessionAlertBanner" class="lan-session-alert" style="display:none;">
+                  <span class="lan-alert-icon">⚠️</span>
+                  <span id="lanSessionAlertText" class="lan-alert-text">连接状态通知</span>
+                  <button type="button" id="btnLanAlertReturnLobby" class="lan-btn secondary small">返回协作大厅</button>
+                </div>
+
+                <div class="lan-snapshot-viewport" id="lanSnapshotViewport">
+                  <div class="lan-snapshot-watermark">
+                    <span>当前协作已建立实时同步通道</span>
+                  </div>
+                  <div class="lan-snapshot-canvas" id="lanSnapshotCanvas">
+                    <svg id="lanSnapshotSvg" class="lan-snapshot-svg"></svg>
+                    <div id="lanSnapshotNodes" class="lan-snapshot-nodes"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+                      <!-- 设置展示区域 (嵌入在主面板内，类似回收/局域网） -->
+            <div class="home-settings-scroll-area" id="homeSettingsScrollArea" style="display: none;">
+              <div class="xxdp-settings-embed-container" id="settingsModal">
+
+        <!-- 移除弹窗专属头部 (隐藏但保留 DOM ID 确保旧脚本平稳向下兼容) -->
+        <header class="xxdp-modal-header" style="display: none !important;" hidden>
+          <div class="xxdp-modal-header-left">
+            <h2 class="xxdp-modal-title" id="settingsModalTitle">全局 API 设置</h2>
+            <span class="xxdp-scope-badge" id="settingsScopeBadge" title="全局 API 设置 (personal:default)">全局 (personal:default)</span>
+          </div>
+          <button class="xxdp-modal-close" id="btnCloseSettings" type="button" title="关闭 (Esc)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+
+        <!-- 现代化紧凑设置 Tab 栏与范围标识 -->
+        <div class="xxdp-settings-tab-bar">
+          <div class="xxdp-settings-tab-nav">
+            <button type="button" class="xxdp-tab-btn active" data-settings-tab="api">API 设置</button>
+            <button type="button" class="xxdp-tab-btn" data-settings-tab="storage" hidden aria-hidden="true">存储设置</button>
+          </div>
+          <div class="xxdp-settings-scope-pill" id="settingsScopeDisplayPill" title="当前配置作用域：个人全局" style="display: none !important;" hidden>
+            <span class="scope-dot"></span>
+            <span>个人全局 (personal:default)</span>
+          </div>
+        </div>
+
+        <div class="xxdp-settings-body" id="settingsBody">
+          <!-- API 设置 Tab 内容容器 (默认模型绑定 + 左右分栏工作台） -->
+          <div class="xxdp-api-tab-content" id="apiTabContent">
+            <!-- 工作台左右分栏架构（左侧平台列表 + 右侧配置编辑) -->
+            <div class="xxdp-api-workbench">
+              <!-- 左侧：服务平台列表（Provider List) -->
+              <div class="xxdp-provider-list-pane">
+                <div class="xxdp-pane-header">
+                  <span class="xxdp-pane-title">服务平台列表</span>
+                  <div class="xxdp-pane-header-actions">
+                    <button type="button" class="xxdp-btn mini secondary" id="btnExportApiConfig" title="导出包含 API 密钥的配置文件 (.json)">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      <span>导出</span>
+                    </button>
+                    <button type="button" class="xxdp-btn mini secondary" id="btnImportApiConfig" title="导入 API 配置文件 (.json)">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <span>导入</span>
+                    </button>
+                    <button type="button" class="xxdp-btn mini secondary" id="btnAddProvider" title="添加新平台">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      <span>添加</span>
+                    </button>
+                    <input type="file" id="apiConfigFileInput" accept=".json" style="display:none;" />
+                  </div>
+                </div>
+                <div class="xxdp-provider-list" id="settingsProviderList">
+            <div class="xxdp-list-loading">加载中..</div>
+                </div>
+              </div>
+
+              <!-- 右侧：平台配置编辑器（Provider Editor) -->
+              <div class="xxdp-provider-edit-pane" id="settingsProviderCard">
+                <div class="xxdp-edit-card-header">
+                  <div class="xxdp-provider-title-group">
+                    <span class="xxdp-provider-name" id="providerCardName">-</span>
+                    <span class="xxdp-protocol-badge" id="providerCardProtocol">-</span>
+                    <div class="xxdp-provider-status" id="providerCardKeyStatus">
+                      <span class="xxdp-status-dot"></span>
+                      <span class="xxdp-status-text">检查中...</span>
+                    </div>
+                    <label class="switch xxdp-toggle-label" title="启用或禁用此平台">
+                      <input type="checkbox" id="providerEnabledInput" checked />
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 默认模型全局绑定：占用详情卡右上方的剩余空间。 -->
+                <div class="xxdp-api-defaults-bar" id="settingsApiDefaultsBar">
+                  <div class="xxdp-defaults-grid">
+                    <div class="xxdp-form-group">
+                      <label for="settingsDefaultChatModel" class="xxdp-label">文本模型</label>
+                      <select id="settingsDefaultChatModel" class="xxdp-select uiverse-hidden-native-select">
+                        <option value="">加载中..</option>
+                      </select>
+                    </div>
+                    <div class="xxdp-form-group">
+                      <label for="settingsDefaultImageModel" class="xxdp-label">图片模型</label>
+                      <select id="settingsDefaultImageModel" class="xxdp-select uiverse-hidden-native-select">
+                        <option value="">加载中..</option>
+                      </select>
+                    </div>
+                    <div class="xxdp-form-group">
+                      <label for="settingsDefaultVideoModel" class="xxdp-label">视频模型</label>
+                      <select id="settingsDefaultVideoModel" class="xxdp-select uiverse-hidden-native-select">
+                        <option value="">加载中..</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                
+                <!-- 双栏工作台架构 (方案 1: 左侧凭证配置 + 右侧模型诊断池) -->
+                <div class="xxdp-provider-edit-columns">
+                  <!-- 左侧栏：基础连接与鉴权配置 -->
+                  <div class="xxdp-provider-col-left">
+                    <!-- 平台显示名称编辑 -->
+                    <div class="xxdp-form-group" id="providerNameGroup">
+                      <label for="providerNameInput" class="xxdp-label">平台名称</label>
+                      <input id="providerNameInput" type="text" class="xxdp-input" placeholder="平台显示名称" autocomplete="off" spellcheck="false" />
+                    </div>
+
+                    <!-- 接口协议 -->
+                    <div class="xxdp-form-group" id="providerProtocolGroup">
+                      <div class="xxdp-label-row">
+                        <label for="providerProtocolInput" class="xxdp-label">接口协议</label>
+                        <span class="xxdp-hint">兼容 OpenAI / 各厂商协议</span>
+                      </div>
+                      <select id="providerProtocolInput" class="xxdp-select uiverse-hidden-native-select">
+                        <option value="openai">OpenAI 兼容</option>
+                        <option value="apimart">APIMart</option>
+                        <option value="volcengine">火山方舟</option>
+                        <option value="minimax">MiniMax</option>
+                      </select>
+                    </div>
+
+                    <!-- Base URL -->
+                    <div class="xxdp-form-group" id="providerBaseUrlGroup">
+                      <div class="xxdp-label-row">
+                        <label for="providerBaseUrlInput" class="xxdp-label">接口地址 (Base URL)</label>
+                        <span class="xxdp-hint" id="providerBaseUrlHint"></span>
+                      </div>
+                      <input id="providerBaseUrlInput" type="text" class="xxdp-input" placeholder="例如：https://api.openai.com/v1" autocomplete="off" spellcheck="false" />
+                    </div>
+
+                    <!-- API Key -->
+                    <div class="xxdp-form-group" id="providerApiKeyGroup">
+                      <div class="xxdp-label-row">
+                        <label for="providerApiKeyInput" class="xxdp-label">API 密钥 (API Key)</label>
+                        <span class="xxdp-hint">可为空白</span>
+                      </div>
+                      <div class="xxdp-input-key-group">
+                        <input id="providerApiKeyInput" type="password" class="xxdp-input" placeholder="为空表示不验证" autocomplete="new-password" spellcheck="false" />
+                        <button type="button" class="xxdp-key-toggle-btn" id="btnToggleApiKeyVisibility" title="切换明文/密文显示">
+                          <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="xxdp-actions-row" id="providerRemoteActions">
+                      <button type="button" class="xxdp-btn secondary" id="btnTestConnection">
+                        <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <span>连通测试</span>
+                      </button>
+                      <button type="button" class="xxdp-btn secondary" id="btnFetchModels" style="display: none;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>获取真实模型</span>
+                      </button>
+                      <span id="settingsTestResult" class="xxdp-test-result" style="display: none;"></span>
+                    </div>
+
+                    <!-- 本机 CLI 环境面板 -->
+                    <div class="xxdp-cli-panel" id="providerCliPanel" hidden>
+                      <div class="xxdp-cli-header-row">
+                        <div class="xxdp-cli-title-wrap">
+                          <span class="xxdp-cli-status-badge" id="providerCliStatusBadge">
+                            <span class="xxdp-status-dot green"></span>
+                            <span id="providerCliStatusText">已就绪</span>
+                          </span>
+                        </div>
+                      </div>
+                      <p class="xxdp-cli-desc" id="providerCliPanelText">本机 CLI 已配置</p>
+                      
+                      <div class="xxdp-cli-meta-grid">
+                        <div class="xxdp-cli-meta-item">
+                          <span class="xxdp-cli-meta-lbl">路径</span>
+                          <span class="xxdp-cli-meta-val" id="providerCliPathVal">-</span>
+                        </div>
+                        <div class="xxdp-cli-meta-item">
+                          <span class="xxdp-cli-meta-lbl">版本</span>
+                          <span class="xxdp-cli-meta-val" id="providerCliVersionVal">-</span>
+                        </div>
+                      </div>
+
+                      <div class="xxdp-cli-cmd-tip">
+                        <span class="xxdp-cli-cmd-lbl">终端登录</span>
+                        <code class="xxdp-cli-cmd-code" id="providerCliCmdVal">agy auth</code>
+                        <button type="button" class="xxdp-btn mini secondary xxdp-cli-env-test" id="btnTestCliEnv" title="检测本机 CLI 环境与版本">
+                          <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                          <span>检测</span>
+                        </button>
+                      </div>
+                      <div class="xxdp-cli-prompt-test">
+                        <div class="xxdp-cli-prompt-head"><span>Prompt Test</span><span class="xxdp-cli-prompt-hint">发送一条短文本验证 CLI</span></div>
+                        <div class="xxdp-cli-prompt-row">
+                          <input id="providerCliPromptInput" class="xxdp-input" type="text" maxlength="500" placeholder="输入测试提示词" autocomplete="off" />
+                          <button type="button" class="xxdp-btn mini secondary" id="btnTestCliPrompt"><span>测试</span></button>
+                        </div>
+                        <pre class="xxdp-cli-prompt-result" id="providerCliPromptResult" aria-live="polite">等待测试...</pre>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 右侧栏：模型卡片 -->
+                  <div class="xxdp-provider-col-right">
+                    <!-- 平台支持模型展示 (按图片 / 视频 / 对话分组) -->
+                    <div class="xxdp-provider-models-group">
+                      <div class="xxdp-manual-model-row" aria-label="手动添加模型">
+                        <select id="manualModelType" class="xxdp-select" title="选择模型能力">
+                          <option value="image">图片</option>
+                          <option value="video">视频</option>
+                          <option value="chat">对话</option>
+                        </select>
+                        <input id="manualModelInput" class="xxdp-input" type="text" maxlength="160" placeholder="手动添加模型 ID，例如 flux-dev" autocomplete="off" spellcheck="false" />
+                        <button type="button" class="xxdp-btn mini secondary" id="btnAddManualModel" title="添加当前模型">
+                          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                          <span>添加模型</span>
+                        </button>
+                      </div>
+                      <div class="xxdp-model-groups" id="providerModelGroups">
+                        <div class="xxdp-model-category">
+                          <div class="xxdp-model-category-head">
+                            <div class="xxdp-model-category-title-wrap">
+                              <span class="xxdp-model-category-lbl">图片模型</span>
+                              <span class="xxdp-model-count-badge" id="providerImageModelCountBadge"><span id="providerImageModelCount">0</span> 个</span>
+                            </div>
+                            <div class="xxdp-model-category-actions">
+                              <button type="button" class="xxdp-model-clear-btn" data-model-clear="image" title="清空已绑定的图片模型">清空</button>
+                              <button type="button" class="xxdp-model-pick-btn" data-model-pick="image" title="从服务商挑选图片模型">+ 挑选模型</button>
+                            </div>
+                          </div>
+                          <div class="xxdp-model-tags" id="providerImageModelTags">
+                            <span class="xxdp-tag-empty">暂未绑定图像模型</span>
+                          </div>
+                        </div>
+                        <div class="xxdp-model-category">
+                          <div class="xxdp-model-category-head">
+                            <div class="xxdp-model-category-title-wrap">
+                              <span class="xxdp-model-category-lbl">视频模型</span>
+                              <span class="xxdp-model-count-badge" id="providerVideoModelCountBadge"><span id="providerVideoModelCount">0</span> 个</span>
+                            </div>
+                            <div class="xxdp-model-category-actions">
+                              <button type="button" class="xxdp-model-clear-btn" data-model-clear="video" title="清空已绑定的视频模型">清空</button>
+                              <button type="button" class="xxdp-model-pick-btn" data-model-pick="video" title="从服务商挑选视频模型">+ 挑选模型</button>
+                            </div>
+                          </div>
+                          <div class="xxdp-model-tags" id="providerVideoModelTags">
+                            <span class="xxdp-tag-empty">暂未绑定视频模型</span>
+                          </div>
+                        </div>
+                        <div class="xxdp-model-category">
+                          <div class="xxdp-model-category-head">
+                            <div class="xxdp-model-category-title-wrap">
+                              <span class="xxdp-model-category-lbl">文本模型</span>
+                              <span class="xxdp-model-count-badge" id="providerChatModelCountBadge"><span id="providerChatModelCount">0</span> 个</span>
+                            </div>
+                            <div class="xxdp-model-category-actions">
+                              <button type="button" class="xxdp-model-clear-btn" data-model-clear="chat" title="清空已绑定的文本模型">清空</button>
+                              <button type="button" class="xxdp-model-pick-btn" data-model-pick="chat" title="从服务商挑选文本模型">+ 挑选模型</button>
+                            </div>
+                          </div>
+                          <div class="xxdp-model-tags" id="providerChatModelTags">
+                            <span class="xxdp-tag-empty">暂未绑定对话模型</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. 本地与存储（V1 紧凑列表) -->
+          <div class="xxdp-settings-section" id="storageSettingsSection" style="display: none;">
+            <div class="xxdp-section-header">
+            <div class="xxdp-section-title">存储</div>
+            <span class="xxdp-section-sub">查看工作区目录状态</span>
+            </div>
+
+            <div class="xxdp-storage-alert">
+            <strong>存储路径：</strong>更改路径不迁移数据。
+            </div>
+
+            <!-- 动态渲染紧凑列表 -->
+            <div class="xxdp-storage-list" id="storageListContainer">
+          <div class="xxdp-storage-loading">读取存储状态..</div>
+            </div>
+
+            <div class="xxdp-storage-footer-actions">
+              <div class="xxdp-storage-footer-left">
+                <span class="xxdp-dirty-notice" id="storageDirtyNotice" style="display:none;">
+                  <span class="dirty-dot"></span>
+                  <span>有未保存的修改</span>
+                </span>
+                <span class="xxdp-status-msg" id="storageStatusMsg" style="display:none;"></span>
+              </div>
+              <button type="button" class="xxdp-btn primary" id="btnSaveStorage">保存存储配置</button>
+            </div>
+          </div>
+
+</div>
+
+        <footer class="xxdp-settings-footer">
+          <div class="xxdp-footer-left">
+            <span class="xxdp-dirty-notice" id="settingsDirtyNotice" style="display:none;">
+              <span class="dirty-dot"></span>
+              <span>有未保存的修改</span>
+            </span>
+            <span class="xxdp-status-msg" id="settingsStatusMsg" style="display:none;"></span>
+          </div>
+          <div class="xxdp-footer-actions">
+            <button type="button" class="xxdp-btn secondary" id="btnCancelSettings">取消</button>
+            <button type="button" class="xxdp-btn danger" id="btnDeleteProvider" title="删除提供商">删除</button>
+            <button type="button" class="xxdp-btn primary" id="btnSaveSettings">保存设置</button>
+          </div>
+        </footer>
+      
+              </div>
+            </div>
+</main>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 视图 3：项目工作区 (App Shell + 真实 smart-canvas.html) ================= -->
+    <section id="workspaceView" class="view-container">
+      <div class="workspace-layout">
+        <!-- 顶部 42px 安静桌面栏 (画布模式全面通顶，彻底隐藏) -->
+        <header class="workspace-topbar" style="display: none !important;" hidden>
+          <div class="workspace-topbar-left">
+            <button id="btnBackToHome" class="btn-back-home" type="button" title="返回首页">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <div class="workspace-brand-link" id="brandBackHome" title="小小办公 (返回首页)">
+              <span>小小办公</span>
+            </div>
+            <span class="workspace-separator">/</span>
+            <span id="currentProjectTitle" class="workspace-current-project">AI 创作品</span>
+          </div>
+
+          <div class="workspace-topbar-right">
+            <div class="workspace-status" id="workspaceTopStatusIndicator" style="display: none !important;" hidden>
+              <span class="workspace-status-dot"></span>
+              <span id="workspaceTopStatusText">本地</span>
+            </div>
+            <button class="btn-project-more" id="workspaceBtnSettings" type="button" title="系统设置">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- 小小办公 项目工作区：真实 XXDP 成熟 Canvas 视口 -->
+        <main class="workspace-canvas-stage" id="canvasStage">
+          <iframe id="xxdpCanvasFrame" class="xxdp-canvas-frame" src="about:blank"></iframe>
+        </main>
+
+        <!-- ================= 图像编辑弹窗 (裁剪/扩图/遮罩/画笔/网格切分) ================= -->
+        <div id="imageEditModal" class="image-edit-modal">
+          <div class="image-edit-panel">
+            <div class="image-edit-head">
+              <div class="image-edit-headline">
+                <div id="imageEditTitle" class="image-edit-title">图像编辑</div>
+            <div id="imageEditSub" class="image-edit-sub">图像编辑</div>
+              </div>
+              <div class="image-edit-mode">
+                <button type="button" class="active" data-image-edit-mode="mask">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+                  <span>遮罩</span>
+                </button>
+                <button type="button" data-image-edit-mode="brush">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 6.99 17.01 16l1.58-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/></svg>
+                  <span>画笔</span>
+                </button>
+                <button type="button" data-image-edit-mode="grid">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span>切分</span>
+                </button>
+              </div>
+              <button class="image-edit-close-btn" type="button" onclick="closeImageEditor()" title="关闭">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <div class="image-edit-head-end">
+              <!-- 遮罩参数 -->
+              <div id="imageMaskTools" class="image-edit-tools" style="display:none;">
+                <label><span>画笔粗细</span> <input id="maskBrushSize" type="range" min="4" max="160" value="32"></label>
+                <button id="maskUndoBtn" class="image-edit-btn secondary" type="button" title="撤销">撤销</button>
+                <button id="maskRedoBtn" class="image-edit-btn secondary" type="button" title="重做">重做</button>
+                <span class="image-edit-sub">涂抹红色区域将导出为遮罩蒙版</span>
+              </div>
+
+              <!-- 画笔参数 -->
+              <div id="imageBrushTools" class="image-edit-tools" style="display:none;">
+                <label><span>颜色</span> <input id="paintBrushColor" type="color" value="#ff2d55"></label>
+                <label><span>粗细</span> <input id="paintBrushSize" type="range" min="2" max="80" value="14"></label>
+                <button id="brushUndoBtn" class="image-edit-btn secondary" type="button" title="撤销">撤销</button>
+                <button id="brushRedoBtn" class="image-edit-btn secondary" type="button" title="重做">重做</button>
+              </div>
+
+              <!-- 网格切分预设 -->
+              <div id="imageGridTools" class="image-edit-tools" style="display:none;">
+                <span class="image-edit-sub">网格预设:</span>
+                <button class="grid-preset-btn active" type="button">2x2</button>
+                <button class="grid-preset-btn" type="button">1x2</button>
+                <button class="grid-preset-btn" type="button">2x1</button>
+                <button class="grid-preset-btn" type="button">3x3</button>
+                <span class="image-edit-sub">切分后将作为独立素材节点置入画布</span>
+              </div>
+            </div>
+
+            <!-- 编辑舞台 -->
+            <div id="imageEditStage" class="image-edit-stage">
+              <div class="image-edit-stage-inner">
+                <div id="cropCanvas" class="crop-canvas">
+                  <img id="cropImage" alt="crop source" />
+                  <canvas id="editDrawCanvas" class="edit-draw-canvas"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- 底部动作 -->
+            <div class="image-edit-actions">
+              <button class="image-edit-btn secondary" type="button" onclick="closeImageEditor()">取消</button>
+              <button id="imageEditApplyBtn" class="image-edit-btn primary" type="button" onclick="applyImageEdit()">应用编辑</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= 全屏高清影院预览 (Cinema Preview Lightbox) ================= -->
+        <div id="cinemaPreviewModal" class="cinema-preview-modal" style="display:none;">
+          <button id="cinemaPreviewCloseBtn" type="button" class="cinema-preview-close" title="关闭 (Esc)">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          <div id="cinemaPreviewContainer" class="cinema-preview-container">
+            <img id="cinemaPreviewImg" class="cinema-preview-media" alt="Cinema Preview" style="display:none;" />
+            <video id="cinemaPreviewVideo" class="cinema-preview-media" controls autoplay playsinline style="display:none;"></video>
+          </div>
+        </div>
+
+        <!-- ================= 视频片段时长切分 (Video Trim Modal) ================= -->
+        <div id="videoTrimModal" class="video-trim-modal" style="display:none;" role="dialog" aria-modal="true">
+          <div class="video-trim-card">
+            <header class="video-trim-header">
+              <div class="video-trim-title-wrap">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                <span class="video-trim-title">视频片段切分</span>
+              </div>
+              <button id="videoTrimCloseBtn" class="video-trim-close" type="button" title="关闭 (Esc)">×</button>
+            </header>
+            <div class="video-trim-body">
+              <div class="video-trim-preview">
+                <video id="trimVideoPlayer" preload="metadata" playsinline controls></video>
+              </div>
+              <div class="video-trim-controls">
+                <div class="trim-field">
+                  <label class="trim-lbl">开始时间</label>
+                  <div class="trim-input-wrap">
+                    <input id="trimStartInput" type="number" min="0" step="0.1" value="0.0" class="trim-input" />
+                    <span class="trim-unit">s</span>
+                  </div>
+                </div>
+                <div class="trim-field">
+                  <label class="trim-lbl">结束时间</label>
+                  <div class="trim-input-wrap">
+                    <input id="trimEndInput" type="number" min="0.1" step="0.1" value="5.0" class="trim-input" />
+                    <span class="trim-unit">s</span>
+                  </div>
+                </div>
+                <div class="trim-field dur-field">
+                  <label class="trim-lbl">片段时长</label>
+                  <span id="trimDurationLabel" class="trim-dur-val">5.0s</span>
+                </div>
+              </div>
+            </div>
+            <footer class="video-trim-actions">
+              <button id="trimCancelBtn" class="trim-btn secondary" type="button">取消</button>
+              <button id="trimApplyBtn" class="trim-btn primary" type="button">创建切分素材</button>
+            </footer>
+          </div>
+        </div>
+
+        <!-- 隐藏文件上传 input -->
+        <input id="workflowImportInput" type="file" accept=".json,.zip" hidden>
+        <input id="assetUploadInput" type="file" accept="image/*,video/*" multiple hidden>
+        <input id="mediaAddInput" type="file" accept="image/*,video/*" multiple hidden>
+      </div>
+    </section>
+
+    <!-- 保留 lanView 占位，避免旧引用异常 -->
+    <div id="lanView" style="display: none;" hidden></div>
+
+    <!-- ================= 局域网验证码加入模态对话框 ================= -->
+    <div id="lanJoinModal" class="xxdp-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="lanJoinModalTitle">
+      <div class="xxdp-dialog-modal lan-join-dialog">
+        <header class="xxdp-modal-header">
+          <div class="xxdp-modal-header-left">
+            <svg class="icon modal-header-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            <h2 class="xxdp-modal-title" id="lanJoinModalTitle">加入协作画布</h2>
+          </div>
+          <button class="xxdp-modal-close" id="btnCloseLanJoin" type="button" title="关闭 (Esc)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+
+        <form id="lanJoinForm" class="xxdp-dialog-form">
+          <div class="lan-target-card">
+            <div class="lan-target-row">
+              <span class="lbl">目标项目:</span>
+              <span class="val" id="lanJoinTargetProject">-</span>
+            </div>
+            <div class="lan-target-row">
+              <span class="lbl">主机名称:</span>
+              <span class="val" id="lanJoinTargetHost">-</span>
+            </div>
+            <div class="lan-target-row">
+              <span class="lbl">主机地址:</span>
+              <span class="val" id="lanJoinTargetAddress">-</span>
+            </div>
+          </div>
+
+          <div class="xxdp-dialog-field" id="lanJoinPasscodeField">
+            <label for="lanJoinPasscodeInput" class="xxdp-dialog-label" id="lblLanJoinPasscode">专属验证码 (PIN) *</label>
+            <input
+              id="lanJoinPasscodeInput"
+              type="text"
+              class="xxdp-dialog-input lan-input-code-lg"
+              placeholder="请输入房主分配的 PIN 码或专属码"
+              maxlength="16"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <p class="xxdp-dialog-desc" id="descLanJoinPasscode">专属验证码将自动绑定你的固定协同席位与光标色彩</p>
+          </div>
+
+          <div id="lanJoinNoPinBanner" class="lan-nopin-banner" style="display:none; margin-bottom: 14px;">
+            <svg class="icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>本房间免密开放，无需输入 PIN 码即可加入</span>
+          </div>
+
+          <div class="xxdp-dialog-field" id="lanJoinNameField">
+            <label for="lanJoinNameInput" class="xxdp-dialog-label">你的显示昵称 (选填)</label>
+            <input
+              id="lanJoinNameInput"
+              type="text"
+              class="xxdp-dialog-input"
+              placeholder="如留空将自动根据席位命名"
+              maxlength="30"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div id="lanJoinErrorHint" class="lan-error-text" style="display:none;"></div>
+
+          <div class="xxdp-dialog-actions">
+            <button type="button" id="btnCancelLanJoin" class="xxdp-dialog-btn secondary">取消</button>
+            <button type="submit" id="btnSubmitLanJoin" class="xxdp-dialog-btn primary">
+              <span>验证并加入协作</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ================= 局域网配对码模态对话框 (Pairing Code Modal) ================= -->
+    <div id="lanPairingModal" class="xxdp-modal-backdrop" role="dialog" aria-modal="true" style="display: none;">
+      <div class="xxdp-dialog-modal lan-pairing-dialog">
+        <header class="xxdp-modal-header">
+          <div class="xxdp-modal-header-left">
+            <svg class="icon modal-header-icon" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18M3 9h18"/></svg>
+            <h2 class="xxdp-modal-title">协作配对码</h2>
+          </div>
+          <button class="xxdp-modal-close" id="btnCloseLanPairingModal" type="button" title="关闭 (Esc)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+
+        <div class="lan-pairing-modal-body">
+          <div class="lan-pairing-card">
+            <span class="lan-pairing-card-title">本机局域网配对码</span>
+            <div class="lan-pairing-row">
+              <input type="text" id="lanHubCurrentPairingCode" class="lan-pairing-input" readonly placeholder="生成中..." />
+              <button type="button" id="btnLanHubCopyPairingCode" class="lan-pairing-btn primary">
+                <svg class="icon" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span>复制配对码</span>
+              </button>
+            </div>
+            <span class="lan-pairing-hint">将配对码发送给同局域网成员，对方粘贴即可瞬时直连画板。</span>
+          </div>
+
+          <div class="lan-pairing-sep"></div>
+
+          <div class="lan-pairing-card">
+            <span class="lan-pairing-card-title">加入其他主机的配对码</span>
+            <div class="lan-pairing-row">
+              <input type="text" id="lanHubImportPairingCode" class="lan-pairing-input" placeholder="在此粘贴 6~16 位协作配对码" />
+              <button type="button" id="btnLanHubConfirmImportCode" class="lan-pairing-btn success">
+                <span>解析并加入</span>
+              </button>
+            </div>
+            <div id="lanHubImportFeedback" class="lan-pairing-feedback" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 新建项目模态对话框 (原生轻量 · 仅名称输入） ================= -->
+
+    <div id="newCanvasModal" class="xxdp-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="newCanvasModalTitle">
+      <div class="xxdp-dialog-modal">
+        <header class="xxdp-modal-header">
+          <h2 class="xxdp-modal-title" id="newCanvasModalTitle">新建项目</h2>
+          <button class="xxdp-modal-close" id="btnCloseNewCanvas" type="button" title="关闭 (Esc)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+
+        <form id="newCanvasForm" class="xxdp-dialog-form">
+          <div class="xxdp-dialog-field">
+            <label for="newCanvasTitleInput" class="xxdp-dialog-label">项目名称</label>
+            <input 
+              id="newCanvasTitleInput" 
+              type="text" 
+              class="xxdp-dialog-input" 
+            placeholder="示例：AI创作品"
+              maxlength="60"
+              autocomplete="off"
+              spellcheck="false"
+              required
+            />
+            <div id="newCanvasErrorHint" class="xxdp-dialog-error" style="display:none;"></div>
+          </div>
+
+          <footer class="xxdp-dialog-actions">
+            <button type="button" id="btnCancelNewCanvas" class="xxdp-btn secondary">取消</button>
+            <button type="submit" id="btnSubmitNewCanvas" class="xxdp-btn primary">创建</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <!-- ================= 模型挑选模态对话框 (方案 B: 按类独立挑选模型) ================= -->
+    <div id="modelPickerModal" class="xxdp-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modelPickerModalTitle">
+      <div class="xxdp-dialog-modal xxdp-picker-modal">
+        <header class="xxdp-modal-header">
+          <div class="xxdp-picker-title-wrap">
+            <h2 class="xxdp-modal-title" id="modelPickerModalTitle">挑选模型</h2>
+            <span class="xxdp-picker-subtitle" id="modelPickerModalSubtitle">服务商：-</span>
+          </div>
+          <button class="xxdp-modal-close" id="btnCloseModelPicker" type="button" title="关闭 (Esc)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+
+        <div class="xxdp-picker-body">
+          <div class="xxdp-picker-toolbar">
+            <div class="xxdp-picker-search-box">
+              <svg class="icon xxdp-picker-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input
+                id="modelPickerSearchInput"
+                type="text"
+                class="xxdp-dialog-input xxdp-picker-search-input"
+                placeholder="搜索模型名称（如 flux、qwen、doubao）..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button type="button" class="xxdp-picker-search-clear" id="btnModelPickerSearchClear" title="清空搜索" style="display: none;">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div class="xxdp-picker-filter-actions">
+              <div class="xxdp-picker-batch-btns">
+                <button type="button" class="xxdp-picker-batch-btn" id="btnModelPickerSelectAll">全选可见</button>
+                <button type="button" class="xxdp-picker-batch-btn" id="btnModelPickerDeselectAll">取消已选</button>
+              </div>
+              <span class="xxdp-picker-counts-hint" id="modelPickerCountsHint">候选模型 0 个</span>
+            </div>
+          </div>
+
+          <div class="xxdp-picker-list" id="modelPickerList" role="listbox" aria-label="候选模型列表">
+            <div class="xxdp-picker-status" id="modelPickerStatus">
+              <div class="xxdp-list-loading">正在拉取服务商实时模型列表...</div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="xxdp-picker-footer">
+          <div class="xxdp-picker-footer-summary">
+            <span>已勾选 <strong id="modelPickerSelectedCount">0</strong> 个</span>
+            <span class="xxdp-picker-footer-tip" id="modelPickerFooterTip">（默认均不勾选，按需选择）</span>
+          </div>
+          <div class="xxdp-picker-footer-actions">
+            <button type="button" id="btnModelPickerCancel" class="xxdp-btn secondary">取消</button>
+            <button type="button" id="btnModelPickerConfirm" class="xxdp-btn primary" disabled>确定添加 (0)</button>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <!-- ================= 修改项目名称模态对话框 (原生轻量 · 统一样式) ================= -->
+    <div id="renameProjectModal" class="xxdp-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="renameProjectModalTitle">
+      <div class="xxdp-dialog-modal">
+        <header class="xxdp-modal-header">
+          <h2 class="xxdp-modal-title" id="renameProjectModalTitle">修改项目名称</h2>
+          <button class="xxdp-modal-close" id="btnCloseRenameProject" type="button" title="关闭 (Esc)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+
+        <form id="renameProjectForm" class="xxdp-dialog-form">
+          <div class="xxdp-dialog-field">
+            <label for="renameProjectTitleInput" class="xxdp-dialog-label">项目名称</label>
+            <input
+              id="renameProjectTitleInput"
+              type="text"
+              class="xxdp-dialog-input"
+            placeholder="新项目名称"
+              maxlength="60"
+              autocomplete="off"
+              spellcheck="false"
+              required
+            />
+            <div id="renameProjectErrorHint" class="xxdp-dialog-error" style="display:none;"></div>
+          </div>
+
+          <footer class="xxdp-dialog-actions">
+            <button type="button" id="btnCancelRenameProject" class="xxdp-btn secondary">取消</button>
+            <button type="submit" id="btnSubmitRenameProject" class="xxdp-btn primary">保存</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+    
+
+    <!-- ================= 通用确认/提示模态对话框 (原生内建样式 · 绝不用浏览器默认 UI) ================= -->
+    <div id="appConfirmModal" class="xxdp-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="appConfirmModalTitle">
+      <div class="xxdp-dialog-modal app-confirm-dialog" style="width: 400px; max-width: 90vw;">
+        <header class="xxdp-modal-header">
+          <h2 class="xxdp-modal-title" id="appConfirmModalTitle">确认操作</h2>
+          <button class="xxdp-modal-close" id="btnCloseAppConfirm" type="button" title="关闭 (Esc)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+
+        <div class="app-confirm-body" style="padding: 10px 0 16px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+          <p id="appConfirmModalMessage" style="margin: 0; white-space: pre-wrap; word-break: break-word;"></p>
+        </div>
+
+        <footer class="xxdp-dialog-actions">
+          <button type="button" id="btnCancelAppConfirm" class="xxdp-btn secondary">取消</button>
+          <button type="button" id="btnSubmitAppConfirm" class="xxdp-btn primary">确定</button>
+        </footer>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="static/vendor/js/lucide.js?v=2026.09.13.r1"></script>
+  <script src="scripts/common/local-assets-sync.js?v=2026.09.13.r1"></script>
+  <script type="module" src="scripts/home/app.js?v=2026.09.18.pointer_events_fix_v4"></script>
+  <script>
+    (function initDesktopWindowControls() {
+      const isDesktop = Boolean(
+        (window.desktopWindow && window.desktopWindow.isDesktop) ||
+        window.desktopWindow ||
+        (window.navigator && window.navigator.userAgent && window.navigator.userAgent.indexOf('Electron') !== -1) ||
+        new URLSearchParams(location.search).get('desktop') === '1' ||
+        sessionStorage.getItem('xxdp_is_desktop') === '1' ||
+        localStorage.getItem('xxdp_is_desktop') === '1'
+      );
+      if (isDesktop) {
+        document.documentElement.classList.add('desktop-shell');
+        try { sessionStorage.setItem('xxdp_is_desktop', '1'); } catch (_) {}
+        try { localStorage.setItem('xxdp_is_desktop', '1'); } catch (_) {}
+      }
+
+      const desktopWindow = window.desktopWindow;
+      if (!desktopWindow) return;
+
+      document.querySelectorAll('[data-window-action]').forEach(function(button) {
+        if (button._windowActionBound) return;
+        button._windowActionBound = true;
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const action = button.getAttribute('data-window-action');
+          if (action === 'minimize') desktopWindow.minimize();
+          if (action === 'maximize') desktopWindow.toggleMaximize();
+          if (action === 'close') desktopWindow.close();
+        });
+      });
+
+      function setMaximized(maximized) {
+        const isMax = Boolean(maximized);
+        document.documentElement.classList.toggle('window-maximized', isMax);
+        const maxBtn = document.querySelector('[data-window-action="maximize"]');
+        if (maxBtn) {
+          maxBtn.title = isMax ? '还原' : '最大化';
+          maxBtn.setAttribute('aria-label', isMax ? '还原' : '最大化');
+        }
+      }
+
+      desktopWindow.isMaximized().then(setMaximized).catch(function() {});
+      desktopWindow.onMaximizedChanged(setMaximized);
+    })();
+  </script>
+  <!-- 桌面窗口生命周期保活与自动退出 -->
+  <script>
+    (function() {
+      const HEARTBEAT_INTERVAL = 2500;
+      let clientId = sessionStorage.getItem('xxdp_desktop_client_id');
+      if (!clientId) {
+        clientId = 'client_' + Math.random().toString(36).slice(2, 11);
+        sessionStorage.setItem('xxdp_desktop_client_id', clientId);
+      }
+
+      function sendHeartbeat() {
+        fetch('/api/app/heartbeat?client_id=' + encodeURIComponent(clientId), { method: 'POST' }).catch(function() {});
+      }
+
+      sendHeartbeat();
+      setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+
+      // 当窗口从最小化还原、或用户从其他应用切回时，立即发送保活心跳
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+          sendHeartbeat();
+        }
+      });
+      window.addEventListener('focus', sendHeartbeat);
+
+      function reportClose() {
+        var url = '/api/app/client-closed?client_id=' + encodeURIComponent(clientId);
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(url);
+        } else {
+          fetch(url, { method: 'POST', keepalive: true }).catch(function() {});
+        }
+      }
+
+      window.addEventListener('beforeunload', reportClose);
+      window.addEventListener('pagehide', reportClose);
+    })();
+  </script>
+</body>
+</html>

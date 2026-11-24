@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // 8910 是局域网协作入口，使用房间会话，不允许旧链接落到账号登录页。
+    if (window.location.port === '8910') {
+      window.location.replace('/?build=2026.09.17.collab5');
+    }
+  </script>
+  <title>身份认证 - 小小办公</title>
+  <link rel="icon" href="/static/images/logo.png?v=2026.09.17.logo_3d_v1" type="image/png">
+  <link rel="stylesheet" href="/styles/common/variables.css?v=1.0.0">
+  <script id="xxdp_theme_init">
+    (function () {
+      try {
+        var t = localStorage.getItem("xxdp_theme") || localStorage.getItem("theme");
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  </script>
+  <style>
+
+    :root, [data-theme="dark"] {
+      --auth-bg: #0d0e11;
+      --auth-card: #15161c;
+      --auth-border: rgba(255, 255, 255, 0.08);
+      --auth-text: #f2f3f5;
+      --auth-muted: #8b8f9a;
+      --auth-hint: #5c606b;
+      --auth-input-bg: #1c1d25;
+      --auth-input-border: rgba(255, 255, 255, 0.12);
+      --auth-btn-bg: #f2f3f5;
+      --auth-btn-text: #0d0e11;
+      --auth-error-bg: rgba(239, 68, 68, 0.1);
+      --auth-error-border: rgba(239, 68, 68, 0.2);
+      --auth-error-text: #f87171;
+      --auth-ok-bg: rgba(34, 197, 94, 0.1);
+      --auth-ok-border: rgba(34, 197, 94, 0.25);
+      --auth-ok-text: #4ade80;
+      --auth-info-bg: rgba(255, 255, 255, 0.06);
+      --auth-info-border: rgba(255, 255, 255, 0.16);
+      --auth-info-text: #f2f3f5;
+      --auth-shadow: rgba(0, 0, 0, 0.55);
+    }
+    [data-theme="light"] {
+      --auth-bg: var(--bg-primary, #eef1f5);
+      --auth-card: var(--bg-elevated, #ffffff);
+      --auth-border: var(--input-border, rgba(15, 23, 42, 0.18));
+      --auth-text: var(--input-fg, #0f172a);
+      --auth-muted: var(--text-secondary, #334155);
+      --auth-hint: var(--input-placeholder, #475569);
+      --auth-input-bg: var(--input-bg, #ffffff);
+      --auth-input-border: var(--input-border, rgba(15, 23, 42, 0.28));
+      --auth-btn-bg: #0f172a;
+      --auth-btn-text: #ffffff;
+      --auth-error-bg: rgba(220, 38, 38, 0.1);
+      --auth-error-border: rgba(185, 28, 28, 0.35);
+      --auth-error-text: #b91c1c;
+      --auth-ok-bg: rgba(22, 163, 74, 0.1);
+      --auth-ok-border: rgba(21, 128, 61, 0.35);
+      --auth-ok-text: #15803d;
+      --auth-info-bg: rgba(15, 23, 42, 0.06);
+      --auth-info-border: rgba(15, 23, 42, 0.2);
+      --auth-info-text: #0f172a;
+      --auth-shadow: rgba(15, 23, 42, 0.12);
+    }
+
+    [data-theme="light"] .auth-input:focus {
+      border-color: rgba(15, 23, 42, 0.45);
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.12);
+    }
+    [data-theme="light"] .auth-input::placeholder {
+      color: #64748b;
+      opacity: 1;
+    }
+    [data-theme="light"] .mode-toggle-btn {
+      color: #334155;
+    }
+    [data-theme="light"] .mode-toggle-btn:hover {
+      color: #0f172a;
+    }
+    [data-theme="light"] .auth-footnote {
+      color: #475569;
+    }
+
+
+    /* 认证页面专用样式：独立居中卡片，永不黑屏 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--auth-bg);
+      color: var(--auth-text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+    }
+
+    .auth-wrapper {
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 20px;
+      margin: auto;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .auth-card {
+      width: 100%;
+      background: var(--auth-card);
+      border: 1px solid var(--auth-border);
+      border-radius: 16px;
+      padding: 36px 32px;
+      box-shadow: 0 16px 40px var(--auth-shadow);
+      box-sizing: border-box;
+    }
+
+    .auth-header {
+      margin-bottom: 26px;
+      text-align: center;
+    }
+
+    .auth-brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .auth-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--auth-text);
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+
+    .auth-subtitle {
+      font-size: 13px;
+      color: var(--auth-muted);
+      margin: 0;
+      font-weight: 400;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: left;
+    }
+
+    .form-label {
+      font-size: 12px;
+      color: #8b8f9a;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-label-tip {
+      font-size: 11px;
+      color: var(--auth-hint);
+    }
+
+    .auth-input {
+      width: 100%;
+      height: 40px;
+      background: var(--auth-input-bg);
+      border: 1px solid var(--auth-input-border);
+      border-radius: 8px;
+      color: var(--auth-text);
+      font-size: 14px;
+      padding: 0 12px;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .auth-input:focus {
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+
+    .auth-input::placeholder {
+      color: #5c606b;
+      font-size: 13px;
+    }
+
+    .auth-remember-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 20px;
+      color: var(--auth-muted);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.4;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .auth-remember-row input {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      flex: 0 0 15px;
+      accent-color: var(--auth-btn-bg);
+      cursor: pointer;
+    }
+
+    .auth-remember-row input:focus-visible {
+      outline: 2px solid var(--auth-info-text);
+      outline-offset: 2px;
+    }
+
+    .auth-submit-btn {
+      width: 100%;
+      height: 42px;
+      background: var(--auth-btn-bg);
+      color: var(--auth-btn-text);
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background-color 0.15s ease, transform 0.05s ease, opacity 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .auth-submit-btn:hover {
+      filter: brightness(1.05);
+    }
+
+    .auth-submit-btn:active {
+      transform: scale(0.99);
+    }
+
+    .auth-submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .auth-error {
+      color: var(--auth-error-text);
+      background: var(--auth-error-bg);
+      border: 1px solid var(--auth-error-border);
+      font-size: 12px;
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: none;
+      line-height: 1.4;
+      text-align: left;
+    }
+
+    .auth-success {
+      color: var(--auth-ok-text);
+      background: var(--auth-ok-bg);
+      border: 1px solid var(--auth-ok-border);
+      font-size: 12px;
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: none;
+      line-height: 1.4;
+      text-align: left;
+    }
+
+    .auth-status-banner {
+      font-size: 12px;
+      color: var(--auth-info-text);
+      background: var(--auth-info-bg);
+      border: 1px solid var(--auth-info-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: none;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .auth-footer {
+      margin-top: 18px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .mode-toggle-btn {
+      background: none;
+      border: none;
+      color: #8b8f9a;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.15s ease;
+      padding: 4px;
+    }
+
+    .mode-toggle-btn:hover {
+      color: #f2f3f5;
+      text-decoration: underline;
+    }
+
+    .auth-footnote {
+      font-size: 11px;
+      color: #5c606b;
+      margin: 0;
+    }
+  
+    .auth-input {
+      color: var(--auth-text) !important;
+      -webkit-text-fill-color: var(--auth-text);
+      caret-color: var(--auth-text);
+    }
+    .auth-input::placeholder {
+      color: var(--auth-hint);
+      opacity: 1;
+      -webkit-text-fill-color: var(--auth-hint);
+    }
+
+  </style>
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <header class="auth-header">
+        <div class="auth-brand-row">
+          <h1 class="auth-title">小小办公</h1>
+        </div>
+        <p class="auth-subtitle" id="authSubtitle">账号认证</p>
+      </header>
+
+      <div class="auth-status-banner" id="authStatusBanner"></div>
+
+      <form id="authForm" class="auth-form" autocomplete="on">
+        <div class="form-group" id="oldPasswordGroup" style="display: none;">
+          <label class="form-label" for="oldPasswordInput">
+            <span>旧密码</span>
+            <span class="form-label-tip">当前正在使用的密码</span>
+          </label>
+          <input
+            type="password"
+            id="oldPasswordInput"
+            class="auth-input"
+            placeholder="请输入旧密码"
+            minlength="6"
+            maxlength="128"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="form-group" id="usernameGroup">
+          <label class="form-label" for="usernameInput">
+            <span>用户名</span>
+            <span class="form-label-tip" id="usernameTip">2-40 个字符</span>
+          </label>
+          <input 
+            type="text" 
+            id="usernameInput" 
+            class="auth-input" 
+            placeholder="例如：admin"
+            required 
+            minlength="2"
+            maxlength="40"
+            autocomplete="username"
+            spellcheck="false"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="passwordInput">
+            <span>密码</span>
+            <span class="form-label-tip" id="passwordTip">至少 6 位</span>
+          </label>
+          <input 
+            type="password" 
+            id="passwordInput" 
+            class="auth-input" 
+            placeholder="请输入密码"
+            required 
+            minlength="6"
+            maxlength="128"
+            autocomplete="current-password"
+          />
+          <label class="auth-remember-row" id="rememberPasswordRow">
+            <input type="checkbox" id="rememberPasswordInput" />
+            <span>记住账号</span>
+          </label>
+        </div>
+
+        <div class="form-group" id="confirmPasswordGroup" style="display: none;">
+          <label class="form-label" for="confirmPasswordInput">
+            <span>确认密码</span>
+            <span class="form-label-tip">请再次输入</span>
+          </label>
+          <input 
+            type="password" 
+            id="confirmPasswordInput" 
+            class="auth-input" 
+            placeholder="请再次输入相同密码"
+            minlength="6"
+            maxlength="128"
+            autocomplete="new-password"
+          />
+        </div>
+
+        <div class="auth-error" id="authErrorMsg"></div>
+        <div class="auth-success" id="authSuccessMsg"></div>
+
+        <button type="submit" id="authSubmitBtn" class="auth-submit-btn">
+          <span id="submitBtnText">登录</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <button type="button" id="modeToggleBtn" class="mode-toggle-btn" style="display: none;">
+          切换模式
+        </button>
+        <p class="auth-footnote">本地部署与公网协作通用认证体系</p>
+      </div>
+    </div>
+  </div>
+  <script src="/static/settings/js/auth.js?v=1.0.0"></script>
+  <!-- 桌面窗口生命周期保活与心跳 -->
+  <script>
+    (function() {
+      const HEARTBEAT_INTERVAL = 2500;
+      let clientId = sessionStorage.getItem('xxdp_desktop_client_id');
+      if (!clientId) {
+        clientId = 'client_' + Math.random().toString(36).slice(2, 11);
+        sessionStorage.setItem('xxdp_desktop_client_id', clientId);
+      }
+
+      function sendHeartbeat() {
+        fetch('/api/app/heartbeat?client_id=' + encodeURIComponent(clientId), { method: 'POST' }).catch(function() {});
+      }
+
+      sendHeartbeat();
+      setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+          sendHeartbeat();
+        }
+      });
+      window.addEventListener('focus', sendHeartbeat);
+
+      function reportClose() {
+        var url = '/api/app/client-closed?client_id=' + encodeURIComponent(clientId);
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(url);
+        } else {
+          fetch(url, { method: 'POST', keepalive: true }).catch(function() {});
+        }
+      }
+
+      window.addEventListener('beforeunload', reportClose);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>API 设置</title>
+    <!-- 旧独立 API 设置页已于 v=1.0.0 升级为智能画布顶栏「API 工作台」面板。
+         本页仅做跳转：把 mode/canvas_id(/id) 参数映射到 /static/smart-canvas.html 并追加 api_panel=1 自动打开面板。 -->
+    <link rel="stylesheet" href="/static/common/css/theme.css?v=1.0.0">
+    <script src="/static/common/js/theme.js?v=1.0.0"></script>
+    <script>
+        (function(){
+            try {
+                if(window.StudioTheme) window.StudioTheme.apply();
+            } catch(e) {}
+        })();
+    </script>
+    <script>
+        (function(){
+            try {
+                var query = new URLSearchParams(window.location.search);
+                var mode = String(query.get('mode') || '').trim().toLowerCase();
+                var target;
+                if (mode === 'lan') {
+                    target = '/static/smart-canvas.html?mode=lan&canvas_id=lan_main&api_panel=1';
+                } else {
+                    var canvasId = String(query.get('canvas_id') || query.get('id') || 'default').trim() || 'default';
+                    target = '/static/smart-canvas.html?id=' + encodeURIComponent(canvasId) + '&api_panel=1';
+                }
+                if (window.top && window.top !== window.self) {
+                    // 在工作台外壳的 iframe 内：只跳转本 iframe，保留外壳与左侧画布选择栏
+                    window.location.href = target;
+                } else {
+                    window.location.replace(target);
+                }
+            } catch (e) {
+                try { window.location.href = '/static/smart-canvas.html?api_panel=1'; } catch (e2) {}
+            }
+        })();
+    </script>
+    <style>
+        body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:#f8fafc; color:#64748b; font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; font-weight:600; }
+        @media (prefers-color-scheme: dark) { body { background:#0f141d; color:#94a3b8; } }
+    </style>
+</head>
+<body>
+    <p>API 设置已升级，正在打开智能画布的 API 工作台…</p>
+</body>
+</html>

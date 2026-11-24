@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.log
+node_modules/
+data/
+assets/
+output/
+release/
+*.env
+

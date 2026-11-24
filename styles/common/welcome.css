@@ -1,0 +1,500 @@
+/* ==========================================================================
+   首次启动欢迎页面 (极简桌面规范，中性黑白灰高对比)
+   设计原则：遵循全局黑白灰设计语言，杜绝 SaaS 蓝、渐变与高饱和杂色
+   ========================================================================== */
+
+.welcome-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--app-bg);
+  background-image: radial-gradient(var(--grid-dot, rgba(0, 0, 0, 0.05)) 1px, transparent 1px);
+  background-size: 24px 24px;
+  padding: 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  user-select: none;
+}
+
+html.desktop-shell .welcome-screen,
+.desktop-shell .welcome-screen {
+  padding: 0;
+  overflow: hidden;
+}
+
+
+
+/* 方案 1：双栏工作台桌面级卡片容器 (Studio Split) */
+.welcome-card {
+  width: 100%;
+  max-width: 720px;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-lg, 12px);
+  padding: 0;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 20px 48px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  overflow: hidden;
+  animation: welcomeCardFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-theme="light"] .welcome-card {
+  border-top: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 20px 44px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 680px) {
+  .welcome-card {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+}
+
+@keyframes welcomeCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 左侧栏：产品定位与特性清单 (全黑白灰单色) */
+.welcome-aside {
+  background-color: rgba(255, 255, 255, 0.025);
+  border-right: 1px solid var(--border);
+  padding: 32px 26px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .welcome-aside {
+  background-color: #f8fafc;
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.welcome-brand-badge {
+  width: 100%;
+  height: 48px;
+  border-radius: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+  box-sizing: border-box;
+}
+
+.welcome-brand-badge .welcome-brand-logo-img {
+  width: auto;
+  max-width: 142px;
+  height: 38px;
+  object-fit: contain;
+  vertical-align: middle;
+  border-radius: 0;
+  display: block;
+  margin: 0 auto;
+  filter: none;
+  transition: opacity 0.2s ease;
+}
+
+.welcome-brand-badge .welcome-brand-light {
+  display: block;
+}
+
+.welcome-brand-badge .welcome-brand-dark {
+  display: none;
+}
+
+[data-theme="dark"] .welcome-brand-badge .welcome-brand-light,
+.theme-dark .welcome-brand-badge .welcome-brand-light,
+html.dark .welcome-brand-badge .welcome-brand-light {
+  display: none !important;
+}
+
+[data-theme="dark"] .welcome-brand-badge .welcome-brand-dark,
+.theme-dark .welcome-brand-badge .welcome-brand-dark,
+html.dark .welcome-brand-badge .welcome-brand-dark {
+  display: block !important;
+}
+
+.welcome-brand-logo-text {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--app-bg);
+  line-height: 1;
+}
+
+.welcome-brand-info {
+  margin-top: 0;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.welcome-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+  margin: 0;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.welcome-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 4px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.welcome-features-list {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.welcome-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.welcome-feature-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.welcome-aside-footer {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.welcome-aside-footer .welcome-footer-icon {
+  width: 13px;
+  height: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* 右侧栏：工作台初始化配置与表单 */
+.welcome-main {
+  padding: 32px 30px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.welcome-main-header {
+  margin-bottom: 20px;
+}
+
+.welcome-main-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.welcome-main-subtitle {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.welcome-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  line-height: 1.3;
+}
+
+[data-theme="light"] .welcome-badge {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-secondary);
+}
+
+/* 表单区域 */
+.welcome-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-label {
+  font-size: 12.5px;
+  color: var(--text-primary);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.form-label-tip {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* 输入框包装器 (带左侧矢量图标与清空按钮) */
+.welcome-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.welcome-input-icon {
+  position: absolute;
+  left: 12px;
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: color var(--duration-fast);
+}
+
+.welcome-input {
+  width: 100%;
+  height: 40px;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm, 8px);
+  color: var(--input-fg);
+  font-size: 13.5px;
+  font-family: inherit;
+  padding: 0 34px 0 36px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast), background-color var(--duration-fast);
+}
+
+.welcome-input::placeholder {
+  color: var(--input-placeholder);
+  opacity: 1;
+}
+
+.welcome-input:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .welcome-input:focus {
+  border-color: rgba(15, 23, 42, 0.45);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.08);
+}
+
+.welcome-input-wrap:focus-within .welcome-input-icon {
+  color: var(--text-primary);
+}
+
+.welcome-input-clear-btn {
+  position: absolute;
+  right: 10px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: var(--hover-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--duration-fast);
+}
+
+.welcome-input-clear-btn:hover {
+  color: var(--text-primary);
+  background: var(--selected-bg);
+}
+
+.welcome-input-clear-btn svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* 常用预设快捷标签 */
+.welcome-preset-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.welcome-chip-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.welcome-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 23px;
+  padding: 0 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs, 4px);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  user-select: none;
+}
+
+.welcome-chip:hover {
+  color: var(--text-primary);
+  background-color: var(--hover-bg);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.welcome-chip:active {
+  transform: translateY(0);
+}
+
+[data-theme="light"] .welcome-chip {
+  background-color: #f1f5f9;
+  border-color: rgba(15, 23, 42, 0.1);
+  color: #475569;
+}
+
+[data-theme="light"] .welcome-chip:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.2);
+}
+
+/* “进入程序” 按钮：极简高质感中性高对比 */
+.welcome-submit-btn {
+  width: 100%;
+  height: 40px;
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color var(--duration-fast), transform 80ms ease, box-shadow var(--duration-fast);
+}
+
+.welcome-submit-btn:hover {
+  background-color: var(--btn-primary-hover);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .welcome-submit-btn:hover {
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="light"] .welcome-submit-btn:hover {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+}
+
+.welcome-submit-btn:active {
+  background-color: var(--btn-primary-active);
+  transform: translateY(0) scale(0.995);
+}
+
+.welcome-btn-arrow {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--duration-fast);
+}
+
+.welcome-submit-btn:hover .welcome-btn-arrow {
+  transform: translateX(2px);
+}
+
+/* 底部辅助说明 */
+.welcome-footer {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-divider);
+}
+
+.welcome-footer-hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.welcome-footer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.welcome-footer-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  text-align: center;
+  margin: 0;
+}

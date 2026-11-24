@@ -1,0 +1,1355 @@
+/* ===== 画布素材回收站样式 ===== */
+
+.minimap-top-bar {
+    position: absolute;
+    right: 22px;
+    bottom: 158px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    transition: bottom .24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 工具栏内部按钮基础样式（与原整理选中按钮保持高度一致） */
+.minimap-top-bar .minimap-bar-btn,
+.minimap-top-bar .minimap-arrange-btn {
+    position: static;
+    height: 32px;
+    padding: 0 11px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--muted, #64748b);
+    background: var(--card, #ffffff);
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .12);
+    cursor: pointer !important;
+    font-size: 11px;
+    font-weight: 850;
+    pointer-events: auto !important;
+    user-select: none;
+    transition: color .14s ease, background .14s ease, transform .14s ease, border-color .14s ease, opacity .14s ease;
+}
+
+.minimap-top-bar .minimap-bar-btn:hover,
+.minimap-top-bar .minimap-arrange-btn:hover {
+    color: var(--strong, #0f172a);
+    background: var(--panel, #ffffff);
+    transform: translateY(-1px);
+}
+
+.minimap-top-bar .minimap-bar-btn i,
+.minimap-top-bar .minimap-bar-btn svg,
+.minimap-top-bar .minimap-arrange-btn i,
+.minimap-top-bar .minimap-arrange-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+/* 回收站按钮特殊高亮与悬停状态 */
+.minimap-trash-btn {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.minimap-trash-btn:hover {
+    color: var(--error) !important;
+    border-color: rgba(239, 68, 68, 0.38) !important;
+}
+
+.minimap-trash-btn.active {
+    color: var(--error) !important;
+    border-color: rgba(239, 68, 68, 0.45) !important;
+    background: var(--soft, rgba(239, 68, 68, 0.06)) !important;
+}
+
+/* 回收站角标数字 */
+.minimap-trash-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--error);
+    color: #ffffff;
+    font-size: 9.5px;
+    font-weight: 850;
+    line-height: 1;
+    margin-left: -1px;
+}
+
+/* 原整理选中按钮在容器内的显隐控制 */
+.minimap-top-bar .minimap-arrange-btn {
+    opacity: 0;
+    pointer-events: none !important;
+}
+
+.minimap-top-bar .minimap-arrange-btn.visible {
+    opacity: 1;
+    pointer-events: auto !important;
+}
+
+/* 暗色主题适配 */
+body.theme-dark .minimap-top-bar .minimap-bar-btn,
+body.theme-dark .minimap-top-bar .minimap-arrange-btn,
+.theme-dark .minimap-top-bar .minimap-bar-btn,
+.theme-dark .minimap-top-bar .minimap-arrange-btn {
+    background: var(--card, #161820);
+    border-color: var(--line, rgba(255, 255, 255, 0.1));
+    color: var(--muted, #94a3b8);
+}
+
+body.theme-dark .minimap-top-bar .minimap-bar-btn:hover,
+body.theme-dark .minimap-top-bar .minimap-arrange-btn:hover,
+.theme-dark .minimap-top-bar .minimap-bar-btn:hover,
+.theme-dark .minimap-top-bar .minimap-arrange-btn:hover {
+    background: var(--soft, #222632);
+    color: var(--text, #f8fafc);
+}
+
+/* ===== 回收站浮层面板 ===== */
+.canvas-trash-panel {
+    position: absolute;
+    right: 22px;
+    bottom: 198px;
+    z-index: 99;
+    width: 440px;
+    max-width: calc(100vw - 44px);
+    height: 520px;
+    max-height: min(540px, calc(100vh - 220px));
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+    border-radius: 18px;
+    background: var(--panel, #ffffff);
+    color: var(--text, #0f172a);
+    box-shadow: 0 24px 64px var(--shadow, rgba(15, 23, 42, 0.18));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(10px) scale(0.98);
+    transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+}
+
+.canvas-trash-panel.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateY(0) scale(1) !important;
+    display: flex !important;
+}
+
+/* 顶部标题栏 */
+.canvas-trash-head {
+    min-height: 50px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.canvas-trash-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.canvas-trash-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--error);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.canvas-trash-icon i,
+.canvas-trash-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+.canvas-trash-title {
+    font-size: 14px;
+    font-weight: 850;
+    line-height: 1.2;
+}
+
+.canvas-trash-sub {
+    margin-top: 2px;
+    font-size: 10.5px;
+    color: var(--muted, #64748b);
+    line-height: 1.2;
+}
+
+.canvas-trash-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.canvas-trash-head-btn {
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 7px;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    background: var(--card, #ffffff);
+    color: var(--muted, #64748b);
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+
+.canvas-trash-head-btn:hover {
+    color: var(--error);
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.06);
+}
+
+.canvas-trash-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    background: var(--card, #ffffff);
+    color: var(--muted, #64748b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+
+.canvas-trash-close-btn:hover {
+    color: var(--text, #0f172a);
+    background: var(--soft, rgba(0, 0, 0, 0.04));
+}
+
+.canvas-trash-close-btn i,
+.canvas-trash-close-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* 标签切换栏 */
+.canvas-trash-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px 4px;
+    border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    flex-shrink: 0;
+}
+
+.canvas-trash-tab {
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted, #64748b);
+    font-size: 11.5px;
+    font-weight: 750;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+
+.canvas-trash-tab:hover {
+    color: var(--text, #0f172a);
+    background: var(--soft, rgba(0, 0, 0, 0.04));
+}
+
+.canvas-trash-tab.active {
+    color: var(--text, #0f172a);
+    background: var(--card, #ffffff);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.canvas-trash-tab-pill {
+    padding: 1px 5px;
+    border-radius: 999px;
+    font-size: 9.5px;
+    font-weight: 850;
+    background: var(--soft, rgba(0, 0, 0, 0.06));
+    color: var(--muted, #64748b);
+}
+
+.canvas-trash-tab.active .canvas-trash-tab-pill {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--error);
+}
+
+/* 列表容器 */
+.canvas-trash-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, .38) transparent;
+}
+
+/* 单条列表项目 */
+.canvas-trash-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.07));
+    background: var(--card, #ffffff);
+    transition: all .14s ease;
+}
+
+.canvas-trash-item:hover {
+    border-color: var(--strong, #0f172a);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .06);
+}
+
+/* 缩略图 */
+.canvas-trash-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 9px;
+    background: var(--soft, #f1f5f9);
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.canvas-trash-thumb img,
+.canvas-trash-thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.canvas-trash-thumb-fallback {
+    color: var(--muted, #94a3b8);
+}
+
+.canvas-trash-thumb-fallback i,
+.canvas-trash-thumb-fallback svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* 描述与信息 */
+.canvas-trash-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.canvas-trash-item-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text, #0f172a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.canvas-trash-item-desc {
+    font-size: 10.5px;
+    color: var(--muted, #64748b);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.canvas-trash-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--muted, #94a3b8);
+}
+
+/* 操作按钮 */
+.canvas-trash-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.canvas-trash-restore-btn {
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--strong, #0f172a);
+    background: var(--strong, #0f172a);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all .14s ease;
+}
+
+.canvas-trash-restore-btn:hover {
+    opacity: 0.92;
+    filter: brightness(1.05);
+}
+
+.canvas-trash-restore-btn i,
+.canvas-trash-restore-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+.canvas-trash-delete-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted, #94a3b8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+
+.canvas-trash-delete-btn:hover {
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.canvas-trash-delete-btn i,
+.canvas-trash-delete-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* 空状态视图 */
+.canvas-trash-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--muted, #94a3b8);
+}
+
+.canvas-trash-empty-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--soft, rgba(0, 0, 0, 0.04));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    color: var(--muted, #94a3b8);
+}
+
+.canvas-trash-empty-icon i,
+.canvas-trash-empty-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.canvas-trash-empty p {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text, #0f172a);
+}
+
+.canvas-trash-empty small {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--muted, #64748b);
+    max-width: 240px;
+    line-height: 1.4;
+}
+
+.canvas-trash-empty-btn {
+    margin-top: 14px;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+    background: var(--card, #ffffff);
+    color: var(--text, #0f172a);
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+
+.canvas-trash-empty-btn:hover {
+    border-color: var(--strong, #0f172a);
+}
+
+/* 暗色模式浮层适配 */
+body.theme-dark .canvas-trash-panel,
+.theme-dark .canvas-trash-panel {
+    background: var(--card, #161820);
+    border-color: var(--line, rgba(255, 255, 255, 0.1));
+    color: #f8fafc;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+body.theme-dark .canvas-trash-item,
+.theme-dark .canvas-trash-item {
+    background: var(--soft, #1a1d26);
+    border-color: var(--line, rgba(255, 255, 255, 0.08));
+}
+
+body.theme-dark .canvas-trash-item:hover,
+.theme-dark .canvas-trash-item:hover {
+    border-color: var(--line-strong, rgba(255, 255, 255, 0.22));
+}
+
+body.theme-dark .canvas-trash-tab.active,
+.theme-dark .canvas-trash-tab.active {
+    background: var(--soft-2, #222632);
+    color: #ffffff;
+}
+
+body.theme-dark .canvas-trash-head-btn,
+body.theme-dark .canvas-trash-close-btn,
+.theme-dark .canvas-trash-head-btn,
+.theme-dark .canvas-trash-close-btn {
+    background: var(--soft, #1a1d26);
+    border-color: var(--line, rgba(255, 255, 255, 0.1));
+    color: var(--muted, #94a3b8);
+}
+
+body.theme-dark .canvas-trash-restore-btn,
+.theme-dark .canvas-trash-restore-btn {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #f8fafc;
+}
+
+/* =========================================================
+   底部工具栏更多卡片 / 回收站浮层 (Canvas Bottom More Popover)
+   ========================================================= */
+
+/* 底部工具栏红点指示器 */
+.canvas-bottom-tool-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--error);
+    border: 1.5px solid var(--card, #ffffff);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+    pointer-events: none;
+}
+
+.theme-dark .canvas-bottom-tool-dot,
+html.studio-theme-dark .canvas-bottom-tool-dot,
+html[data-theme="dark"] .canvas-bottom-tool-dot {
+    border-color: #1a1d24;
+}
+
+/* ==========================================================================
+   方案 A：极简无缝悬浮卡片 (Linear / Figma 风格) - 回收站弹窗
+   ========================================================================== */
+
+/* 确保底栏工具栏允许子元素溢出浮动，严禁使用 contain: paint 裁剪回收站弹窗 */
+.canvas-bottom-toolbar {
+    contain: none !important;
+    overflow: visible !important;
+}
+
+.canvas-bottom-toolbar:has(.canvas-bottom-more-popover.open),
+.canvas-bottom-toolbar.has-open-popover {
+    z-index: 1000 !important;
+}
+
+/* 浮动卡片容器 */
+.canvas-bottom-more-popover {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    right: 2px;
+    z-index: 100;
+    width: 380px;
+    max-width: calc(100vw - 24px);
+    height: 460px;
+    max-height: min(460px, calc(100vh - 96px));
+    display: none;
+    flex-direction: column;
+    background: var(--card, #ffffff);
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    overflow: hidden;
+    pointer-events: auto !important;
+    user-select: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .16s ease, transform .16s ease;
+}
+
+.canvas-bottom-more-popover.open {
+    display: flex !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+/* 顶部标题栏 */
+.canvas-more-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 48px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    flex-shrink: 0;
+    background: var(--card, #ffffff);
+}
+
+.canvas-more-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+}
+
+.canvas-more-trash-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--soft, rgba(0, 0, 0, 0.04));
+    color: var(--text, #334155);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.canvas-more-trash-icon i,
+.canvas-more-trash-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.canvas-more-title-info {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.canvas-more-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.canvas-more-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text, #0f172a);
+    line-height: 1;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+}
+
+.canvas-more-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--soft, rgba(0, 0, 0, 0.06));
+    color: var(--muted, #64748b);
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.canvas-more-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.canvas-more-action-btn {
+    height: 26px;
+    padding: 0 8px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--muted, #64748b);
+    font-size: 11.5px;
+    font-weight: 550;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+
+.canvas-more-action-btn:hover {
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.canvas-more-action-btn i,
+.canvas-more-action-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+.canvas-more-close-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--muted, #64748b);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .12s ease;
+}
+
+.canvas-more-close-btn:hover {
+    color: var(--text, #0f172a);
+    background: var(--soft, rgba(0, 0, 0, 0.06));
+}
+
+.canvas-more-close-btn i,
+.canvas-more-close-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* 标签切换栏 (Segmented Control 滑块风格) */
+.canvas-more-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 8px 12px 4px;
+    padding: 3px;
+    border-radius: 10px;
+    background: var(--soft, rgba(0, 0, 0, 0.04));
+    flex-shrink: 0;
+}
+
+.canvas-more-tab {
+    flex: 1;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted, #64748b);
+    font-size: 11.5px;
+    font-weight: 550;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all .14s ease;
+}
+
+.canvas-more-tab:hover {
+    color: var(--text, #0f172a);
+}
+
+.canvas-more-tab.active {
+    color: var(--strong, #0f172a);
+    background: var(--card, #ffffff);
+    font-weight: 650;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 1px rgba(0, 0, 0, 0.02);
+}
+
+.canvas-more-tab-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    background: var(--soft, rgba(0, 0, 0, 0.06));
+    color: var(--muted, #64748b);
+}
+
+.canvas-more-tab.active .canvas-more-tab-pill {
+    background: var(--soft-2, rgba(0, 0, 0, 0.08));
+    color: var(--text, #0f172a);
+}
+
+/* 列表主体 */
+.canvas-more-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line, rgba(148, 163, 184, .25)) transparent;
+}
+
+.canvas-more-body::-webkit-scrollbar {
+    width: 5px;
+}
+
+.canvas-more-body::-webkit-scrollbar-thumb {
+    background: var(--line, rgba(148, 163, 184, .25));
+    border-radius: 999px;
+}
+
+/* 列表单项 (方案 A：轻量无边框 Hover Row) */
+.canvas-bottom-more-popover .canvas-trash-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    transition: background-color .12s ease;
+    cursor: default;
+}
+
+.canvas-bottom-more-popover .canvas-trash-item:hover {
+    background: var(--soft, rgba(0, 0, 0, 0.04));
+}
+
+.canvas-bottom-more-popover .canvas-trash-thumb {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: var(--soft, #f1f5f9);
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.canvas-bottom-more-popover .canvas-trash-thumb img,
+.canvas-bottom-more-popover .canvas-trash-thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.canvas-bottom-more-popover .canvas-trash-thumb-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    padding: 1px 3px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.72);
+    color: #ffffff;
+    font-size: 8.5px;
+    font-weight: 600;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.canvas-bottom-more-popover .canvas-trash-thumb-fallback {
+    color: var(--muted, #94a3b8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.canvas-bottom-more-popover .canvas-trash-thumb-fallback i,
+.canvas-bottom-more-popover .canvas-trash-thumb-fallback svg {
+    width: 18px;
+    height: 18px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-item-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-item-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text, #0f172a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.canvas-bottom-more-popover .canvas-trash-item-time {
+    font-size: 10.5px;
+    color: var(--muted, #94a3b8);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.canvas-bottom-more-popover .canvas-trash-item-sub {
+    font-size: 11px;
+    color: var(--muted, #64748b);
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.canvas-bottom-more-popover .canvas-trash-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding-left: 2px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-restore-btn {
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: none;
+    background: var(--strong, #0f172a);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    transition: opacity .12s ease, transform .12s ease;
+}
+
+.canvas-bottom-more-popover .canvas-trash-restore-btn:hover {
+    opacity: 0.88;
+}
+
+.canvas-bottom-more-popover .canvas-trash-restore-btn:active {
+    transform: scale(0.96);
+}
+
+.canvas-bottom-more-popover .canvas-trash-restore-btn i,
+.canvas-bottom-more-popover .canvas-trash-restore-btn svg {
+    width: 11px;
+    height: 11px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-delete-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--muted, #94a3b8);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .14s ease, color .12s ease, background-color .12s ease;
+}
+
+.canvas-bottom-more-popover .canvas-trash-item:hover .canvas-trash-delete-btn {
+    opacity: 1;
+}
+
+.canvas-bottom-more-popover .canvas-trash-delete-btn:hover {
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.canvas-bottom-more-popover .canvas-trash-delete-btn i,
+.canvas-bottom-more-popover .canvas-trash-delete-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* 底部辅助栏 */
+.canvas-more-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 34px;
+    padding: 0 14px;
+    background: var(--soft, rgba(0, 0, 0, 0.02));
+    border-top: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    font-size: 10.5px;
+    color: var(--muted, #94a3b8);
+    flex-shrink: 0;
+}
+
+.canvas-more-kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--text, #334155);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* 空状态 */
+.canvas-bottom-more-popover .canvas-trash-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 36px 20px;
+    text-align: center;
+}
+
+.canvas-bottom-more-popover .canvas-trash-empty-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--soft, rgba(0, 0, 0, 0.04));
+    color: var(--muted, #94a3b8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-empty-icon i,
+.canvas-bottom-more-popover .canvas-trash-empty-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-empty p {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text, #0f172a);
+    margin: 0 0 4px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-empty small {
+    font-size: 11px;
+    color: var(--muted, #94a3b8);
+    line-height: 1.4;
+    max-width: 220px;
+}
+
+.canvas-bottom-more-popover .canvas-trash-empty-btn {
+    margin-top: 14px;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    background: var(--card, #ffffff);
+    color: var(--text, #0f172a);
+    font-size: 11.5px;
+    font-weight: 550;
+    cursor: pointer;
+    transition: all .14s ease;
+}
+
+.canvas-bottom-more-popover .canvas-trash-empty-btn:hover {
+    background: var(--soft, rgba(0, 0, 0, 0.04));
+}
+
+/* 底部按钮激活状态 */
+.canvas-bottom-tool.active,
+#canvasBottomMoreBtn.active {
+    background: var(--soft-2, rgba(0, 0, 0, 0.07)) !important;
+    color: var(--strong, #0f172a) !important;
+}
+
+/* ==========================================================================
+   暗色主题适配 (覆盖所有深色模式选择器)
+   ========================================================================== */
+.theme-dark .canvas-bottom-more-popover,
+html.studio-theme-dark .canvas-bottom-more-popover,
+html[data-theme="dark"] .canvas-bottom-more-popover {
+    background: rgba(22, 24, 29, 0.98);
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .canvas-more-head,
+html.studio-theme-dark .canvas-more-head,
+html[data-theme="dark"] .canvas-more-head {
+    background: transparent;
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.theme-dark .canvas-more-trash-icon,
+html.studio-theme-dark .canvas-more-trash-icon,
+html[data-theme="dark"] .canvas-more-trash-icon {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+}
+
+.theme-dark .canvas-more-title,
+html.studio-theme-dark .canvas-more-title,
+html[data-theme="dark"] .canvas-more-title {
+    color: #f8fafc;
+}
+
+.theme-dark .canvas-more-badge,
+html.studio-theme-dark .canvas-more-badge,
+html[data-theme="dark"] .canvas-more-badge {
+    background: rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+}
+
+.theme-dark .canvas-more-action-btn,
+.theme-dark .canvas-more-close-btn,
+html.studio-theme-dark .canvas-more-action-btn,
+html.studio-theme-dark .canvas-more-close-btn,
+html[data-theme="dark"] .canvas-more-action-btn,
+html[data-theme="dark"] .canvas-more-close-btn {
+    color: #94a3b8;
+}
+
+.theme-dark .canvas-more-action-btn:hover,
+html.studio-theme-dark .canvas-more-action-btn:hover,
+html[data-theme="dark"] .canvas-more-action-btn:hover {
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.12);
+}
+
+.theme-dark .canvas-more-close-btn:hover,
+html.studio-theme-dark .canvas-more-close-btn:hover,
+html[data-theme="dark"] .canvas-more-close-btn:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-dark .canvas-more-tabs,
+html.studio-theme-dark .canvas-more-tabs,
+html[data-theme="dark"] .canvas-more-tabs {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.theme-dark .canvas-more-tab,
+html.studio-theme-dark .canvas-more-tab,
+html[data-theme="dark"] .canvas-more-tab {
+    color: #94a3b8;
+}
+
+.theme-dark .canvas-more-tab:hover,
+html.studio-theme-dark .canvas-more-tab:hover,
+html[data-theme="dark"] .canvas-more-tab:hover {
+    color: #f8fafc;
+}
+
+.theme-dark .canvas-more-tab.active,
+html.studio-theme-dark .canvas-more-tab.active,
+html[data-theme="dark"] .canvas-more-tab.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .canvas-more-tab-pill,
+html.studio-theme-dark .canvas-more-tab-pill,
+html[data-theme="dark"] .canvas-more-tab-pill {
+    background: rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+}
+
+.theme-dark .canvas-more-tab.active .canvas-more-tab-pill,
+html.studio-theme-dark .canvas-more-tab.active .canvas-more-tab-pill,
+html[data-theme="dark"] .canvas-more-tab.active .canvas-more-tab-pill {
+    background: rgba(255, 255, 255, 0.14);
+    color: #f8fafc;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-item:hover,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-item:hover,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-thumb,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-thumb,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-thumb {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-thumb-fallback,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-thumb-fallback,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-thumb-fallback {
+    color: #64748b;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-item-title,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-item-title,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-item-title {
+    color: #f8fafc;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-item-time,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-item-time,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-item-time {
+    color: #64748b;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-item-sub,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-item-sub,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-item-sub {
+    color: #94a3b8;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-restore-btn,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-restore-btn,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-restore-btn {
+    background: #f8fafc;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-restore-btn:hover,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-restore-btn:hover,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-restore-btn:hover {
+    opacity: 0.92;
+    background: #ffffff;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-delete-btn,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-delete-btn,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-delete-btn {
+    color: #64748b;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-delete-btn:hover,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-delete-btn:hover,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-delete-btn:hover {
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.14);
+}
+
+.theme-dark .canvas-more-footer,
+html.studio-theme-dark .canvas-more-footer,
+html[data-theme="dark"] .canvas-more-footer {
+    background: rgba(255, 255, 255, 0.02);
+    border-top-color: rgba(255, 255, 255, 0.06);
+    color: #64748b;
+}
+
+.theme-dark .canvas-more-kbd,
+html.studio-theme-dark .canvas-more-kbd,
+html[data-theme="dark"] .canvas-more-kbd {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-empty-icon,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-empty-icon,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-empty-icon {
+    background: rgba(255, 255, 255, 0.06);
+    color: #64748b;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-empty p,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-empty p,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-empty p {
+    color: #f8fafc;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-empty small,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-empty small,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-empty small {
+    color: #64748b;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-empty-btn,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-empty-btn,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-empty-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
+}
+
+.theme-dark .canvas-bottom-more-popover .canvas-trash-empty-btn:hover,
+html.studio-theme-dark .canvas-bottom-more-popover .canvas-trash-empty-btn:hover,
+html[data-theme="dark"] .canvas-bottom-more-popover .canvas-trash-empty-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .canvas-bottom-tool.active,
+html.studio-theme-dark .canvas-bottom-tool.active,
+html[data-theme="dark"] .canvas-bottom-tool.active,
+.theme-dark #canvasBottomMoreBtn.active,
+html.studio-theme-dark #canvasBottomMoreBtn.active,
+html[data-theme="dark"] #canvasBottomMoreBtn.active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #f1f5f9 !important;
+}

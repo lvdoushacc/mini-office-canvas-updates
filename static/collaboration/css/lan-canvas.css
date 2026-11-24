@@ -1,0 +1,1091 @@
+/**
+ * 局域网协作画布专属样式 (static/collaboration/css/lan-canvas.css)
+ * 包含：
+ * 1. 四色席位变量与光标图层 (.lan-cursor-layer, .lan-remote-cursor)
+ * 2. 顶部半透明毛玻璃协作状态栏 (.lan-collab-status-bar)
+ * 3. 远端成员节点选区高亮与昵称徽章 (.lan-node-selected-*, .lan-node-select-tag)
+ * 4. 只读观察模式阻断遮罩与告警横幅 (.lan-readonly-overlay, .lan-readonly-banner)
+ */
+
+:root {
+    --lan-seat-red: #ef4444;
+    --lan-seat-red-glow: rgba(239, 68, 68, 0.45);
+    --lan-seat-blue: #3b82f6;
+    --lan-seat-blue-glow: rgba(59, 130, 246, 0.45);
+    --lan-seat-green: #10b981;
+    --lan-seat-green-glow: rgba(16, 185, 129, 0.45);
+    --lan-seat-purple: #a855f7;
+    --lan-seat-purple-glow: rgba(168, 85, 247, 0.45);
+    --lan-seat-readonly: #64748b;
+    --lan-seat-readonly-glow: rgba(100, 116, 139, 0.35);
+}
+
+/* =========================================================================
+   1. 协同光标与画布指针设置 (本地 + 远端)
+   ========================================================================= */
+/* 画布主区域应用本地四色席位光标 */
+.shell:not(.panning),
+.shell:not(.panning) #world,
+.shell:not(.panning) .world,
+.shell:not(.panning) .canvas-empty-guide {
+    cursor: var(--lan-local-cursor, default);
+}
+
+/* 节点主要区域跟随协同光标，排除操作句柄与输入框 */
+.shell:not(.panning) .node:not(.resizing),
+.shell:not(.panning) .smart-node:not(.resizing),
+.shell:not(.panning) .node-head,
+.shell:not(.panning) .smart-node-head,
+.shell:not(.panning) .board-canvas {
+    cursor: var(--lan-local-cursor, default);
+}
+
+/* 个人画布不显示协作专用的彩色本地/远端光标。 */
+.is-personal-mode .lan-cursor-layer,
+.is-personal-mode .lan-local-cursor-badge,
+.is-personal-mode .lan-cursor-color-picker-wrap {
+    display: none !important;
+}
+
+.is-personal-mode .shell:not(.panning) #world,
+.is-personal-mode .shell:not(.panning) .world,
+.is-personal-mode .shell:not(.panning) .canvas-empty-guide,
+.is-personal-mode .shell:not(.panning) .node-head,
+.is-personal-mode .shell:not(.panning) .smart-node-head,
+.is-personal-mode .shell:not(.panning) .board-canvas {
+    cursor: grab;
+}
+
+/* 保证交互控件维持原有功能性光标 */
+.shell button,
+.shell .btn,
+.shell input,
+.shell textarea,
+.shell [contenteditable="true"],
+.shell .resize-handle,
+.shell .port,
+.shell select,
+.shell a,
+.shell .color-picker,
+.shell .dropdown-item {
+    cursor: revert;
+}
+
+/* 本地鼠标跟随身份徽章 (.lan-local-cursor-badge) */
+.lan-local-cursor-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    pointer-events: none !important;
+    z-index: 10005;
+    user-select: none;
+    will-change: transform;
+    transition: opacity 0.15s ease;
+}
+
+.lan-local-cursor-badge.is-dimmed {
+    opacity: 0.2;
+}
+
+.lan-cursor-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none !important;
+    z-index: 999;
+    overflow: visible;
+    will-change: transform;
+    contain: layout style paint;
+}
+
+.lan-remote-cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none !important;
+    z-index: 1000;
+    display: flex;
+    align-items: flex-start;
+    transition: none;
+    will-change: transform;
+    user-select: none;
+}
+
+.lan-cursor-svg {
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 2px 6px var(--lan-cursor-glow, rgba(0, 0, 0, 0.35)));
+}
+
+.lan-cursor-svg path {
+    fill: var(--lan-cursor-color, #3b82f6) !important;
+    stroke: #ffffff;
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+}
+
+.lan-cursor-badge {
+    margin-left: 7px;
+    margin-top: 5px;
+    min-height: 30px;
+    padding: 4px 11px 4px 5px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0;
+    color: var(--text-primary, #111827);
+    background: var(--panel-bg, #ffffff);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--lan-cursor-color, #3b82f6);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    letter-spacing: 0.2px;
+}
+
+.lan-cursor-avatar {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--lan-cursor-color, #3b82f6);
+    background: var(--hover-bg, #e5e7eb);
+    color: var(--lan-cursor-color, #3b82f6);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.lan-cursor-avatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+[data-theme="light"] .lan-cursor-badge {
+    color: var(--text-primary, #111827);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 5px 16px rgba(15, 23, 42, 0.14);
+}
+
+[data-theme="dark"] .lan-cursor-badge {
+    color: var(--text-primary, #f8fafc);
+    background: var(--panel-bg, #111827);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32);
+}
+
+.lan-cursor-badge .lan-seat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lan-cursor-color, #3b82f6);
+    box-shadow: 0 0 6px var(--lan-cursor-color, #3b82f6);
+}
+
+/* 4 种颜色光标主题预设 */
+.lan-cursor-red {
+    --lan-cursor-color: var(--lan-seat-red);
+    --lan-cursor-glow: var(--lan-seat-red-glow);
+}
+.lan-cursor-red .lan-cursor-svg path {
+    fill: var(--lan-seat-red);
+}
+
+.lan-cursor-blue {
+    --lan-cursor-color: var(--lan-seat-blue);
+    --lan-cursor-glow: var(--lan-seat-blue-glow);
+}
+.lan-cursor-blue .lan-cursor-svg path {
+    fill: var(--lan-seat-blue);
+}
+
+.lan-cursor-green {
+    --lan-cursor-color: var(--lan-seat-green);
+    --lan-cursor-glow: var(--lan-seat-green-glow);
+}
+.lan-cursor-green .lan-cursor-svg path {
+    fill: var(--lan-seat-green);
+}
+
+.lan-cursor-purple {
+    --lan-cursor-color: var(--lan-seat-purple);
+    --lan-cursor-glow: var(--lan-seat-purple-glow);
+}
+.lan-cursor-purple .lan-cursor-svg path {
+    fill: var(--lan-seat-purple);
+}
+
+/* =========================================================================
+   2. 顶部协作状态栏
+   ========================================================================= */
+.lan-collab-status-bar {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    z-index: 95;
+    pointer-events: auto;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 999px;
+    height: 36px;
+    box-sizing: border-box;
+    background: var(--panel, rgba(23, 29, 41, 0.95));
+    border: 1px solid var(--line, rgba(255, 255, 255, 0.10));
+    box-shadow: 0 10px 24px var(--shadow, rgba(0, 0, 0, 0.36));
+    color: var(--text, #f1f5f9);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform .14s ease, border-color .16s ease, background .16s ease, color .16s ease, box-shadow .16s ease;
+    flex-shrink: 0;
+}
+
+/* 兼容 fallback 挂载在 #shell 或 body 直属子级的情况 */
+#shell > .lan-collab-status-bar,
+body > .lan-collab-status-bar {
+    position: fixed;
+    top: 22px;
+    right: 120px;
+    left: auto;
+    transform: none;
+}
+
+.lan-collab-status-bar:hover {
+    background: rgba(30, 34, 45, 0.98);
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 14px 30px var(--shadow, rgba(0, 0, 0, 0.45));
+    transform: translateY(-1px);
+}
+
+.lan-collab-status-bar:active {
+    transform: scale(0.98);
+}
+
+.lan-collab-status-bar.active {
+    border-color: rgba(255, 255, 255, 0.32);
+    background: rgba(38, 42, 54, 0.98);
+}
+
+.lan-collab-status-bar .status-live-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #10b981;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.55);
+    animation: lan-live-pulse 2s infinite ease-in-out;
+}
+
+@keyframes lan-live-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.18); opacity: 0.75; }
+}
+
+.lan-collab-status-bar .lan-status-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.lan-collab-status-bar .status-text,
+.lan-collab-status-bar .lan-status-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text, #f1f5f9);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+
+.lan-collab-status-bar .lan-status-sub {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--muted, #94a3b8);
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+
+.lan-collab-status-bar.is-single .lan-status-sub {
+    color: var(--muted, #94a3b8);
+}
+
+.lan-collab-status-bar.is-readonly .lan-status-sub {
+    color: var(--muted, #94a3b8);
+}
+
+.lan-collab-status-bar.is-error .lan-status-sub {
+    color: #fca5a5;
+}
+
+.lan-collab-status-bar .status-members {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 6px;
+    margin-left: 2px;
+    border-left: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+}
+
+.lan-collab-status-bar .status-members:empty {
+    display: none;
+}
+
+.lan-member-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--text-primary, #f8fafc);
+    border: 1px solid transparent;
+}
+
+.lan-member-pill .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.lan-member-pill.seat-red {
+    border-color: rgba(239, 68, 68, 0.35);
+}
+.lan-member-pill.seat-red .pill-dot {
+    background: var(--lan-seat-red);
+    box-shadow: 0 0 6px var(--lan-seat-red);
+}
+
+.lan-member-pill.seat-blue {
+    border-color: rgba(59, 130, 246, 0.35);
+}
+.lan-member-pill.seat-blue .pill-dot {
+    background: var(--lan-seat-blue);
+    box-shadow: 0 0 6px var(--lan-seat-blue);
+}
+
+.lan-member-pill.seat-green {
+    border-color: rgba(16, 185, 129, 0.35);
+}
+.lan-member-pill.seat-green .pill-dot {
+    background: var(--lan-seat-green);
+    box-shadow: 0 0 6px var(--lan-seat-green);
+}
+
+.lan-member-pill.seat-purple {
+    border-color: rgba(168, 85, 247, 0.35);
+}
+.lan-member-pill.seat-purple .pill-dot {
+    background: var(--lan-seat-purple);
+    box-shadow: 0 0 6px var(--lan-seat-purple);
+}
+
+.lan-member-pill.seat-readonly {
+    border-color: rgba(100, 116, 139, 0.35);
+    opacity: 0.8;
+}
+.lan-member-pill.seat-readonly .pill-dot {
+    background: var(--lan-seat-readonly);
+}
+
+/* 只读状态栏 */
+.lan-collab-status-bar.is-readonly {
+    background: var(--panel, rgba(23, 29, 41, 0.95));
+    border-color: rgba(148, 163, 184, 0.30);
+    color: var(--text, #f1f5f9);
+}
+
+.lan-collab-status-bar.is-readonly .status-live-indicator {
+    background: #94a3b8;
+    box-shadow: none;
+    animation: none;
+}
+
+.lan-collab-status-bar.is-readonly .lan-status-sub {
+    color: var(--muted, #94a3b8);
+}
+
+/* 独立单机工作区 (统一为纯粹中性黑白灰) */
+.lan-collab-status-bar.is-single {
+    background: var(--panel, rgba(23, 29, 41, 0.95));
+    border-color: var(--line, rgba(255, 255, 255, 0.10));
+    color: var(--text, #f1f5f9);
+}
+
+.lan-collab-status-bar.is-single .status-text {
+    color: var(--text, #f1f5f9);
+}
+
+.lan-collab-status-bar.is-single .lan-status-sub {
+    color: var(--muted, #94a3b8);
+}
+
+/* 初始化失败错误状态与重试按钮 */
+.lan-collab-status-bar.is-error {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #ffffff;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.25);
+}
+
+.lan-collab-status-bar.is-error .status-live-indicator {
+    background: #ef4444;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+    animation: none;
+}
+
+.lan-collab-status-bar.is-error .status-text {
+    color: #ffffff;
+}
+
+.lan-collab-status-bar.is-error .lan-status-sub {
+    color: #fca5a5;
+}
+
+.lan-retry-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--error-strong);
+    font-size: 11px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    margin-left: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.lan-retry-btn:hover {
+    background: #fef2f2;
+    transform: scale(1.04);
+}
+
+.lan-retry-btn:active {
+    transform: scale(0.96);
+}
+
+/* =========================================================================
+   3. 选区高亮光晕与节点标签
+   ========================================================================= */
+.lan-node-selected-red {
+    box-shadow: 0 0 0 2px var(--lan-seat-red), 0 0 20px var(--lan-seat-red-glow) !important;
+}
+.lan-node-selected-blue {
+    box-shadow: 0 0 0 2px var(--lan-seat-blue), 0 0 20px var(--lan-seat-blue-glow) !important;
+}
+.lan-node-selected-green {
+    box-shadow: 0 0 0 2px var(--lan-seat-green), 0 0 20px var(--lan-seat-green-glow) !important;
+}
+.lan-node-selected-purple {
+    box-shadow: 0 0 0 2px var(--lan-seat-purple), 0 0 20px var(--lan-seat-purple-glow) !important;
+}
+
+.lan-node-select-tag {
+    position: absolute;
+    top: -24px;
+    left: 0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #ffffff;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 30;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    animation: lan-tag-in 0.15s ease-out;
+}
+
+@keyframes lan-tag-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 只读模式下禁用写操作视觉 */
+.lan-readonly-mode .run-btn,
+.lan-readonly-mode .node-prompt,
+.lan-readonly-mode textarea,
+.lan-readonly-mode input[type="text"] {
+    cursor: not-allowed !important;
+}
+
+/* =========================================================================
+   4. 局域网数据恢复模态框 (Recovery Modal)
+   ========================================================================= */
+.lan-recovery-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(16px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    animation: lan-fade-in 0.2s ease-out;
+}
+
+.lan-recovery-box {
+    background: #0f172a;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 32px rgba(239, 68, 68, 0.2);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 520px;
+    padding: 24px;
+    color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.lan-recovery-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.lan-recovery-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.lan-recovery-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--error);
+}
+
+.lan-recovery-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #cbd5e1;
+    margin: 0;
+}
+
+.lan-recovery-backup-path {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #94a3b8;
+    word-break: break-all;
+}
+
+.lan-recovery-backup-path code {
+    color: var(--text, inherit);
+    font-family: monospace;
+}
+
+.lan-recovery-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.lan-recovery-steps p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.lan-recovery-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lan-btn-primary {
+    /* --btn-primary-bg 在画布主题下被映射为纯白，与白色文字叠成白底白字；
+       改用随主题翻转的 --text 作底、--btn-primary-text 作字。 */
+    background: var(--text, #0f172a);
+    color: var(--btn-primary-text, #ffffff);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.lan-btn-primary:hover {
+    background: var(--text, #0f172a);
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.lan-btn-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.lan-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: var(--error);
+}
+
+.lan-pairing-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--soft-2, rgba(148, 163, 184, 0.18));
+    border: 1px solid var(--line-2, rgba(148, 163, 184, 0.4));
+    color: var(--text, #e5e9f0);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.lan-pairing-trigger-btn:hover {
+    background: var(--strong, rgba(216, 222, 233, 0.28));
+    border-color: var(--strong, rgba(216, 222, 233, 0.6));
+    color: var(--strong-text, #10141d);
+    transform: translateY(-1px);
+}
+
+.lan-pairing-trigger-btn:active {
+    transform: translateY(0);
+}
+
+
+
+/* =========================================================================
+   Header 协同按钮与协同浮动面板
+   ========================================================================= */
+#lanCollabToggle,
+.lan-collab-toggle {
+    display: none !important;
+}
+
+html.is-lan-mode #lanCollabToggle,
+body.is-lan-mode #lanCollabToggle,
+html.is-lan-mode .lan-collab-toggle,
+body.is-lan-mode .lan-collab-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 7px;
+}
+
+.lan-collab-panel {
+    display: none !important;
+}
+
+html.is-lan-mode .lan-collab-panel.open,
+body.is-lan-mode .lan-collab-panel.open {
+    display: flex !important;
+}
+
+.lan-status-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.55);
+    flex-shrink: 0;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lan-collab-toggle.status-connecting .lan-status-indicator-dot {
+    background: var(--warning);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.55);
+}
+
+.lan-collab-toggle.status-disconnected .lan-status-indicator-dot,
+.lan-collab-toggle.status-error .lan-status-indicator-dot {
+    background: var(--error);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.55);
+}
+
+.lan-collab-toggle.status-readonly .lan-status-indicator-dot {
+    background: var(--warning);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.55);
+}
+
+.lan-collab-toggle.status-unpaired .lan-status-indicator-dot {
+    background: #94a3b8;
+    box-shadow: none;
+}
+
+/* 协同面板内部组件 */
+.lan-panel-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.lan-panel-status-dot.status-online {
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.lan-panel-status-dot.status-connecting {
+    background: var(--warning);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.lan-panel-status-dot.status-error {
+    background: var(--error);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.lan-panel-members-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 28px;
+    align-items: center;
+}
+
+.lan-panel-member-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid var(--line);
+    background: var(--soft);
+    color: var(--text);
+}
+
+.lan-panel-member-item .seat-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.lan-panel-member-item.seat-red .seat-dot {
+    background: var(--lan-seat-red, #ef4444);
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+.lan-panel-member-item.seat-blue .seat-dot {
+    background: var(--lan-seat-blue, #3b82f6);
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+}
+
+.lan-panel-member-item.seat-green .seat-dot {
+    background: var(--lan-seat-green, #10b981);
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.lan-panel-member-item.seat-purple .seat-dot {
+    background: var(--lan-seat-purple, #a855f7);
+    box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
+}
+
+.lan-panel-member-item.seat-readonly .seat-dot {
+    background: var(--lan-seat-readonly, #64748b);
+    box-shadow: none;
+}
+
+
+/* =========================================================================
+   我的光标颜色选择器 (Color Swatch Palette)
+   ========================================================================= */
+.lan-cursor-color-picker-wrap {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line, rgba(255, 255, 255, 0.1));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lan-color-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+}
+
+.lan-color-picker-title {
+    color: var(--text-muted, var(--muted, #94a3b8));
+    font-weight: 600;
+}
+
+.lan-color-picker-current-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-primary, var(--text, #f1f5f9));
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--hover-bg, var(--soft, rgba(255, 255, 255, 0.06)));
+    border: 1px solid var(--border, var(--line, rgba(255, 255, 255, 0.08)));
+}
+
+.lan-color-palette {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lan-color-swatch {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: transparent;
+    padding: 2px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.lan-color-swatch:hover {
+    transform: scale(1.15);
+}
+
+.lan-color-swatch .lan-swatch-dot {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: var(--swatch-color);
+    box-shadow: 0 0 8px var(--swatch-glow);
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.lan-color-swatch .lan-swatch-check {
+    position: absolute;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.2s ease;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+
+.lan-color-swatch.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 12px var(--swatch-glow);
+    transform: scale(1.08);
+}
+
+.lan-color-swatch.active .lan-swatch-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+
+/* Agent5: disconnect / reconnect status */
+.lan-collab-status-bar.is-reconnecting {
+    border-color: rgba(245, 158, 11, 0.40);
+    background: rgba(245, 158, 11, 0.08);
+}
+.lan-collab-status-bar.is-reconnecting .status-live-indicator {
+    background: #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.50);
+    animation: lan-live-pulse 1.2s ease-in-out infinite;
+}
+.lan-collab-status-bar.is-reconnecting .lan-status-sub {
+    color: #fbbf24;
+}
+
+
+/* Agent5 theme align: follow global --input-* / text tokens */
+.lan-recovery-modal .lan-recovery-card,
+.lan-color-picker {
+    color: var(--text-primary, #f1f5f9);
+}
+
+.lan-panel input[type="text"],
+.lan-panel input:not([type]),
+.lan-panel textarea,
+.lan-panel select,
+#pairingCodeModal input,
+.lan-recovery-modal input {
+    background: var(--input-bg, #1c1d25);
+    color: var(--input-fg, #f2f3f5);
+    border: 1px solid var(--input-border, rgba(255, 255, 255, 0.14));
+    caret-color: var(--input-fg, #f2f3f5);
+}
+
+.lan-panel input::placeholder,
+.lan-panel textarea::placeholder,
+#pairingCodeModal input::placeholder {
+    color: var(--input-placeholder, #6b7280);
+}
+
+/* =========================================================================
+   浅色模式高对比与中性黑白灰适配
+   ========================================================================= */
+[data-theme="light"] .lan-collab-status-bar,
+html[data-theme="light"] .lan-collab-status-bar,
+body[data-theme="light"] .lan-collab-status-bar {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(15, 23, 42, 0.12);
+    color: #0f172a !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .lan-collab-status-bar:hover,
+html[data-theme="light"] .lan-collab-status-bar:hover,
+body[data-theme="light"] .lan-collab-status-bar:hover {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.22);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="light"] .lan-collab-status-bar.active,
+html[data-theme="light"] .lan-collab-status-bar.active,
+body[data-theme="light"] .lan-collab-status-bar.active {
+    background: #f1f5f9;
+    border-color: rgba(15, 23, 42, 0.28);
+}
+
+[data-theme="light"] .lan-collab-status-bar .status-text,
+html[data-theme="light"] .lan-collab-status-bar .status-text,
+body[data-theme="light"] .lan-collab-status-bar .status-text,
+[data-theme="light"] .lan-collab-status-bar .lan-status-main,
+html[data-theme="light"] .lan-collab-status-bar .lan-status-main,
+body[data-theme="light"] .lan-collab-status-bar .lan-status-main {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar .lan-status-sub,
+html[data-theme="light"] .lan-collab-status-bar .lan-status-sub,
+body[data-theme="light"] .lan-collab-status-bar .lan-status-sub {
+    color: #475569 !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-single,
+html[data-theme="light"] .lan-collab-status-bar.is-single,
+body[data-theme="light"] .lan-collab-status-bar.is-single {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(15, 23, 42, 0.12);
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-single .status-text,
+html[data-theme="light"] .lan-collab-status-bar.is-single .status-text {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-single .lan-status-sub,
+html[data-theme="light"] .lan-collab-status-bar.is-single .lan-status-sub {
+    color: #475569 !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar .status-members,
+html[data-theme="light"] .lan-collab-status-bar .status-members {
+    border-left-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="light"] .lan-member-pill {
+    background: rgba(15, 23, 42, 0.05);
+    color: #0f172a;
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-reconnecting,
+html[data-theme="light"] .lan-collab-status-bar.is-reconnecting {
+    background: rgba(254, 252, 232, 0.96);
+    border-color: rgba(217, 119, 6, 0.35);
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-reconnecting .lan-status-sub,
+html[data-theme="light"] .lan-collab-status-bar.is-reconnecting .lan-status-sub {
+    color: #b45309 !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-readonly,
+html[data-theme="light"] .lan-collab-status-bar.is-readonly {
+    background: rgba(248, 250, 252, 0.96);
+    border-color: rgba(100, 116, 139, 0.25);
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-readonly .status-text,
+html[data-theme="light"] .lan-collab-status-bar.is-readonly .status-text {
+    color: #1e293b !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-readonly .lan-status-sub,
+html[data-theme="light"] .lan-collab-status-bar.is-readonly .lan-status-sub {
+    color: #64748b !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-error,
+html[data-theme="light"] .lan-collab-status-bar.is-error {
+    background: rgba(254, 242, 242, 0.96);
+    border-color: rgba(220, 38, 38, 0.35);
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-error .status-text,
+html[data-theme="light"] .lan-collab-status-bar.is-error .status-text {
+    color: #991b1b !important;
+}
+
+[data-theme="light"] .lan-collab-status-bar.is-error .lan-status-sub,
+html[data-theme="light"] .lan-collab-status-bar.is-error .lan-status-sub {
+    color: #dc2626 !important;
+}
+
+[data-theme="light"] .lan-retry-btn {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+[data-theme="light"] .lan-retry-btn:hover {
+    background: #fecaca;
+}

@@ -1,0 +1,315 @@
+/* ==========================================================================
+   小小办公 - 统一主题设计系统 (Theme System V1.1)
+   规范：Codex 极简桌面风格，支持 Dark（深色默认）与 Light（专业中性浅灰）
+   ========================================================================== */
+
+:root,
+[data-theme="dark"] {
+  /* ================= 1. 核心布局背景 Tokens ================= */
+  --app-bg: #0d0e11;             /* 顶层桌面主背景 */
+  --topbar-bg: #0d0e11;          /* 42px 安静顶栏背景 */
+  --sidebar-bg: #0d0e11;         /* 195px 紧凑侧栏背景 */
+  --canvas-bg: #000000;          /* 无限画布主舞台背景 (纯黑 #000000) */
+  --panel-bg: rgba(20, 22, 28, 0.92); /* 浮动工具栏与面板背景 */
+
+  /* ================= 2. 画布节点与卡片 Tokens ================= */
+  --node-bg: #15161c;            /* 基础节点背景 (深灰、轻边框) */
+  --node-hover-bg: #1a1b22;      /* 节点悬浮背景 */
+  --node-selected-bg: #181920;   /* 节点选中背景 */
+  --node-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.6), 0 16px 36px rgba(0, 0, 0, 0.65);
+  --node-selected-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.75), 0 12px 32px rgba(0, 0, 0, 0.6);
+  --card-border-top-sheen: rgba(255, 255, 255, 0.16);
+
+  /* ================= 3. 边框与分割线 Tokens ================= */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.18);
+  --border-selected: rgba(255, 255, 255, 0.42);
+  --border-divider: rgba(255, 255, 255, 0.05);
+
+  /* ================= 4. 文字层级 Tokens ================= */
+  --text-primary: #f2f3f5;       /* 主要文字：清晰灰白 */
+  --text-secondary: #8b8f9a;     /* 次级文字：中灰 */
+  --text-muted: #5c606b;         /* 弱文字：低灰 */
+
+  /* ================= 4b. 表单 / 输入 Tokens（首页与认证共用） ================= */
+  --input-bg: #1c1d25;
+  --input-fg: #f2f3f5;
+  --input-placeholder: #6b7280;
+  --input-border: rgba(255, 255, 255, 0.14);
+  --input-border-focus: rgba(255, 255, 255, 0.35);
+  --input-disabled-bg: #15161c;
+  --surface-card: #15161c;
+  --surface-subtle: #12131a;
+  --surface: var(--surface-card);
+  --fg: var(--text-primary);
+  --muted-fg: var(--text-muted);
+  --border-color: var(--input-border);
+  --border-focus: var(--input-border-focus);
+  --bg-input: var(--input-bg);
+
+  /* ================= 4c. 统一主要按钮 Tokens (Dark: 高对比中性白底黑字) ================= */
+  --btn-primary-bg: #f2f3f5;
+  --btn-primary-text: #0d0e11;
+  --btn-primary-hover: #ffffff;
+  --btn-primary-active: #e2e4e8;
+  --btn-primary-disabled: rgba(242, 243, 245, 0.35);
+
+  /* ================= 5. 画布点阵与连线 Tokens ================= */
+  --grid-dot: rgba(255, 255, 255, 0.065);
+  --connection: rgba(255, 255, 255, 0.28);
+  --connection-hover: rgba(255, 255, 255, 0.85);
+  --connection-selected: #ffffff;
+  --port-bg: #15161c;
+  --port-border: rgba(255, 255, 255, 0.4);
+
+  /* ================= 6. 选区与交互 Tokens ================= */
+  --selection-border: rgba(255, 255, 255, 0.32);
+  --selection-fill: rgba(255, 255, 255, 0.035);
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --selected-bg: rgba(255, 255, 255, 0.12);
+
+  /* ================= 7. 语义状态 Tokens ================= */
+  --accent: #f2f3f5;
+  --primary: #f2f3f5;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #f87171;
+  /* 语义色变体：统一收敛，避免各组件重复硬编码 */
+  --success-strong: #34d399;
+  --success-soft: #6ee7b7;
+  --warning-strong: #fbbf24;
+  --error-strong: #f87171;
+  --error-soft: #fca5a5;
+
+  /* ================= 8. 首页 Portal 与新建节点 Tokens (Dark) ================= */
+  --bg-portal: #000000;
+  --bg-portal-hover: #080808;
+  --border-portal: rgba(255, 255, 255, 0.08);
+  --border-portal-hover: rgba(255, 255, 255, 0.18);
+  --portal-header-bg: #000000;
+  --portal-header-border: rgba(255, 255, 255, 0.05);
+  --portal-viewport-bg: #000000;
+  --canvas-dot-portal: rgba(255, 255, 255, 0.08);
+  --canvas-grid-portal: 16px;
+
+  --portal-node-bg: #1c1d25;
+  --portal-node-border: rgba(255, 255, 255, 0.09);
+  --portal-node-text: var(--text-secondary);
+  --portal-node-ai-bg: #22242e;
+  --portal-node-ai-border: rgba(255, 255, 255, 0.22);
+  --portal-node-ai-text: var(--text-primary);
+  --portal-wire: rgba(255, 255, 255, 0.15);
+  --portal-wire-ai: rgba(255, 255, 255, 0.42);
+
+  --bg-center-node: #191b22;
+  --bg-center-node-hover: #22242e;
+  --border-center-node: rgba(255, 255, 255, 0.2);
+  --border-center-node-hover: rgba(255, 255, 255, 0.38);
+  --text-center-node: #ffffff;
+
+  --bg-command: #15161b;
+  --border-command: rgba(255, 255, 255, 0.08);
+  --border-command-focus: rgba(255, 255, 255, 0.2);
+
+  /* ================= 9. 图标与控件密度统一 Tokens (V3) ================= */
+  --shop-icon-sm: 14px;
+  --shop-icon-md: 16px;
+  --shop-icon-lg: 18px;
+  --shop-icon-stroke: 1.5px;
+
+  --shop-control-sm: 26px;
+  --shop-control-md: 32px;
+  --shop-control-lg: 36px;
+
+  --shop-gap-xs: 4px;
+  --shop-gap-sm: 6px;
+  --shop-gap-md: 8px;
+  --shop-gap-lg: 12px;
+
+  /* 兼容旧变量 */
+  --bg-app: var(--app-bg);
+  --bg-sidebar: var(--sidebar-bg);
+  --bg-topbar: var(--topbar-bg);
+  --bg-node: var(--node-bg);
+  --border-node: var(--border);
+  --border-node-ai: rgba(255, 255, 255, 0.24);
+  --wire-subtle: var(--portal-wire);
+  --wire-ai: var(--portal-wire-ai);
+  --status-online: var(--success);
+  --text-1: var(--text-primary);
+  --text-2: var(--text-secondary);
+  --text-3: var(--text-muted);
+}
+
+/* ==========================================================================
+   浅色模式 (Light Theme V1.1)
+   设计原则：专业桌面中性浅灰，高质感、极度护眼、绝非刺眼纯白
+   ========================================================================== */
+[data-theme="light"] {
+  /* ================= 1. 核心布局背景 Tokens ================= */
+  --app-bg: #f3f4f6;             /* 顶层桌面主背景 (柔和中性浅灰) */
+  --topbar-bg: #f3f4f6;          /* 42px 顶栏背景 */
+  --sidebar-bg: #f3f4f6;         /* 195px 侧栏背景 */
+  --canvas-bg: #e9ebf0;          /* 无限画布主舞台背景 (专业浅灰底色) */
+  --panel-bg: rgba(255, 255, 255, 0.95); /* 浮动面板背景 */
+
+  /* ================= 2. 画布节点与卡片 Tokens ================= */
+  --node-bg: #fbfbfc;            /* 基础节点背景 (非常轻的暖白/中性白，非刺眼纯白) */
+  --node-hover-bg: #f4f5f8;      /* 节点悬浮背景 */
+  --node-selected-bg: #ffffff;   /* 节点选中背景 */
+  --node-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.06);
+  --node-shadow-hover: 0 2px 5px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(15, 23, 42, 0.1);
+  --node-selected-shadow: 0 0 0 1.5px rgba(15, 23, 42, 0.85), 0 10px 28px rgba(15, 23, 42, 0.12);
+  --card-border-top-sheen: rgba(255, 255, 255, 0.95);
+
+  /* ================= 3. 边框与分割线 Tokens ================= */
+  --border: rgba(15, 23, 42, 0.14); /* 浅色提高可见度 */
+  --border-hover: rgba(15, 23, 42, 0.24);
+  --border-selected: rgba(15, 23, 42, 0.4);
+  --border-divider: rgba(15, 23, 42, 0.1);
+
+  /* ================= 4. 文字层级 Tokens ================= */
+  --text-primary: #0f172a;       /* 主要文字：高对比深色 */
+  --text-secondary: #334155;     /* 次级文字：可读中深灰 */
+  --text-muted: #64748b;         /* 弱文字：仍需可读 */
+
+  /* ================= 4b. 表单 / 输入 Tokens（首页与认证共用） ================= */
+  --input-bg: #ffffff;
+  --input-fg: #0f172a;           /* 输入文字必须深色 */
+  --input-placeholder: #64748b;
+  --input-border: rgba(15, 23, 42, 0.22);
+  --input-border-focus: rgba(15, 23, 42, 0.42);
+  --input-disabled-bg: #f1f5f9;
+  --surface-card: #ffffff;
+  --surface-subtle: #f8fafc;
+  --surface: var(--surface-card);
+  --fg: var(--text-primary);
+  --muted-fg: var(--text-muted);
+  --border-color: var(--input-border);
+  --border-focus: var(--input-border-focus);
+  --bg-input: var(--input-bg);
+
+  /* ================= 4c. 统一主要按钮 Tokens (Light: 高对比中性黑底白字) ================= */
+  --btn-primary-bg: #0f172a;
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover: #1e293b;
+  --btn-primary-active: #020617;
+  --btn-primary-disabled: rgba(15, 23, 42, 0.35);
+
+  /* ================= 5. 画布点阵与连线 Tokens ================= */
+  --grid-dot: rgba(0, 0, 0, 0.05); /* 点阵极淡，提供空间感而非图纸感 */
+  --connection: rgba(0, 0, 0, 0.28);
+  --connection-hover: rgba(0, 0, 0, 0.85);
+  --connection-selected: #18191d;
+  --port-bg: #ffffff;
+  --port-border: rgba(0, 0, 0, 0.4);
+
+  /* ================= 6. 选区与交互 Tokens ================= */
+  --selection-border: rgba(0, 0, 0, 0.3);
+  --selection-fill: rgba(0, 0, 0, 0.025);
+  --hover-bg: rgba(0, 0, 0, 0.045);
+  --selected-bg: rgba(0, 0, 0, 0.085);
+
+  /* ================= 7. 语义状态 Tokens ================= */
+  --accent: #18191d;
+  --primary: #0f172a;
+  --success: #059669;
+  --warning: #d97706;
+  --error: #ef4444;
+  /* 语义色变体：统一收敛，避免各组件重复硬编码 */
+  --success-strong: #047857;
+  --success-soft: #34d399;
+  --warning-strong: #b45309;
+  --error-strong: #dc2626;
+  --error-soft: #fca5a5;
+
+  /* ================= 8. 首页 Portal 与新建节点 Tokens (Light 真正浅色化) ================= */
+  --bg-portal: #ffffff;
+  --bg-portal-hover: #fafbfc;
+  --border-portal: rgba(0, 0, 0, 0.075);
+  --border-portal-hover: rgba(0, 0, 0, 0.16);
+  --portal-header-bg: #f8f9fa;
+  --portal-header-border: rgba(0, 0, 0, 0.05);
+  --portal-viewport-bg: #eaecf1; /* Portal 内部画布完全浅色化，与主画布一致！ */
+  --canvas-dot-portal: rgba(0, 0, 0, 0.055);
+  --canvas-grid-portal: 16px;
+
+  --portal-node-bg: #ffffff;     /* 内部微节点为纯白卡片，层次分明 */
+  --portal-node-border: rgba(0, 0, 0, 0.075);
+  --portal-node-text: var(--text-secondary);
+  --portal-node-ai-bg: #eceef1;  /* AI 节点中性浅灰高亮，与非 AI 卡片区分 */
+  --portal-node-ai-border: rgba(15, 23, 42, 0.28);
+  --portal-node-ai-text: var(--text-primary);
+  --portal-wire: rgba(0, 0, 0, 0.2);
+  --portal-wire-ai: rgba(15, 23, 42, 0.45);
+
+  /* 新建画布 Portal：浅灰背景 + 极淡边框 + 清晰文字 */
+  --bg-center-node: #eaecf1;
+  --bg-center-node-hover: #e2e5ec;
+  --border-center-node: rgba(0, 0, 0, 0.11);
+  --border-center-node-hover: rgba(0, 0, 0, 0.22);
+  --text-center-node: #18191d;   /* 清晰深色文字，告别纯白 */
+
+  --bg-command: #ffffff;
+  --border-command: rgba(0, 0, 0, 0.09);
+  --border-command-focus: rgba(0, 0, 0, 0.22);
+
+  /* 兼容旧变量 */
+  --bg-app: var(--app-bg);
+  --bg-sidebar: var(--sidebar-bg);
+  --bg-topbar: var(--topbar-bg);
+  --bg-node: var(--portal-node-bg);
+  --border-node: var(--portal-node-border);
+  --border-node-ai: var(--portal-node-ai-border);
+  --wire-subtle: var(--portal-wire);
+  --wire-ai: var(--portal-wire-ai);
+  --status-online: var(--success);
+  --text-1: var(--text-primary);
+  --text-2: var(--text-secondary);
+  --text-3: var(--text-muted);
+}
+
+/* ==========================================================================
+   全局字体、度量与动画公共常量 (两套主题通用，保持完全一致的布局与尺寸)
+   ========================================================================== */
+:root {
+  --font-sans: "Inter", "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "HarmonyOS Sans SC", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+  --font-display: "Space Grotesk", "Inter", var(--font-sans);
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 15px;
+
+  /* 方案 A 工业极简同心圆角阶梯 */
+  --card-radius: 12px;
+  --card-radius-sm: 8px;
+  --card-radius-xs: 6px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* V3 图标尺寸与线宽标准 */
+  --shop-icon-sm: 14px;
+  --shop-icon-md: 16px;
+  --shop-icon-lg: 18px;
+  --shop-icon-stroke: 1.5px;
+
+  /* V3 控件与按钮高度标准 (Desktop Tool Density) */
+  --shop-control-sm: 26px;
+  --shop-control-md: 32px;
+  --shop-control-lg: 36px;
+
+  /* V3 统一阶梯间距标准 */
+  --shop-gap-xs: 4px;
+  --shop-gap-sm: 6px;
+  --shop-gap-md: 8px;
+  --shop-gap-lg: 12px;
+
+  --duration-fast: 140ms cubic-bezier(0.4, 0, 0.2, 1);
+}

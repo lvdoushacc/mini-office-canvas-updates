@@ -1,0 +1,16 @@
+{
+  "name": "xxpd-desktop-shell",
+  "version": "0.1.0",
+  "private": true,
+  "description": "小小办公桌面程序框",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^38.0.0"
+  },
+  "allowScripts": {
+    "electron@38.8.6": true
+  }
+}
